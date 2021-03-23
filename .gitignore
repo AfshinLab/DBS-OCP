@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+/src/dbsopc.egg-info
+.idea
+/src/dbsopc/_version.py

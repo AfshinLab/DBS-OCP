@@ -1,0 +1,23 @@
+# Whenever this file is updated, you need to run misc/condalock.sh to create
+# the environment.lock.yml file.
+name: dbsopc
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - conda-forge::python=3.8
+  - bioconda::pysam
+  - bioconda::cutadapt
+  - bioconda::samtools
+  - bioconda::snakemake-minimal
+  - bioconda::starcode
+  - conda-forge::tqdm
+  - importlib_resources
+  - conda-forge::ruamel.yaml
+  - bioconda::fastqc
+  - bioconda::multiqc
+  - conda-forge::pandas
+  - pip
+  - pip:
+      - snaptools

@@ -1,0 +1,23 @@
+title: "DBS-OPC run report"
+intro_text: "This is a collection of results from the DBS-OPC pipeline. Go to our
+<a href=https://github.com/AfshinLab/DBS-OCP>github page</a> for more information."
+
+table_columns_visible:
+    Cutadapt:
+        percent_trimmed: False
+    FastQC:
+        percent_duplicates: False
+
+fn_ignore_dirs:
+    - '.snakemake'
+
+run_modules:
+    - fastqc
+    - cutadapt
+    - custom_content
+
+sp:
+    cutadapt:
+        fn: "trimmed.log"
+    fastqc:
+        fn_re: "trimmed.barcoded.[1|2].fastq.gz"

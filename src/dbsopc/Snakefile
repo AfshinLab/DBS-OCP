@@ -1,0 +1,191 @@
+import os
+
+from snakemake.utils import validate
+
+configfile: "dbsopc.yaml"
+validate(config, "config.schema.yaml")
+
+
+inputs_preprocess = [
+    "trimmed.barcoded.1.fastq.gz",
+    "trimmed.barcoded.2.fastq.gz",
+    "trimmed.barcoded.1_fastqc.html",
+    "trimmed.barcoded.2_fastqc.html",
+]
+
+rule final:
+    input: inputs_preprocess
+
+
+rule preprocess:
+    """Preprocess FASTQs to get trimmed and barcoded files"""
+    input: inputs_preprocess
+
+
+rule trim:
+    """Trim away 5' and possible 3' handles on read1 and trim possible 3' handles on 
+    read2."""
+    output:
+        interleaved_fastq=pipe("trimmed.fastq")
+    input:
+        r1_fastq="reads.1.fastq.gz",
+        r2_fastq="reads.2.fastq.gz",
+    log: "trimmed.log"
+    threads: workflow.cores - 1  # rule tag needs one thread
+    params:
+        five_prime = "XNNN" + config["h1"] + "N"*len(config["barcode"]) + config["h2"],
+        trim_len = sum([len(config["h1"]), len(config["barcode"]), len(config["h2"])])
+    shell:
+        "cutadapt"
+        " -g '{params.five_prime};min_overlap={params.trim_len}...{config[h3]};optional'"
+        " -A {config[h3]}"
+        " --pair-filter 'any'"
+        " -e 0.2"
+        " -j {threads}"
+        " -m 25"
+        " --interleaved"
+        " -o {output.interleaved_fastq}"
+        " {input.r1_fastq}"
+        " {input.r2_fastq}"
+        " > {log}"
+
+
+rule tag:
+    """Tag reads with uncorrected and corrected barcode."""
+    output:
+        r1_fastq="trimmed.barcoded.1.fastq.gz",
+        r2_fastq="trimmed.barcoded.2.fastq.gz"
+    input:
+        interleaved_fastq="trimmed.fastq",
+        uncorrected_barcodes="barcodes.fasta.gz",
+        corrected_barcodes="barcodes.clstr"
+    log: "trimmed.barcoded.1.fastq.log"
+    threads: 1
+    shell:
+        "blr tagfastq"
+        " --o1 {output.r1_fastq}"
+        " --o2 {output.r2_fastq}"
+        " -b {config[cluster_tag]}"
+        " -s {config[sequence_tag]}"
+        " --mapper {config[read_mapper]}"
+        " --pattern-match {config[barcode]}"
+        " --sample-nr {config[sample_nr]}"
+        " {input.uncorrected_barcodes}"
+        " {input.corrected_barcodes}"
+        " {input.interleaved_fastq}"
+        " 2> {log}"
+
+
+rule extract_DBS:
+    """Extract barcode sequence from read1 FASTQ"""
+    output:
+        fastq="barcodes.fasta.gz"
+    input:
+         fastq="reads.1.fastq.gz"
+    log: "barcodes.fasta.log"
+    threads: 20
+    params:
+        extract_len = len(config["h1"])
+    shell:
+        "cutadapt"
+        " -g 'XNNN{config[h1]};min_overlap={params.extract_len}...{config[h2]}'"
+        " -e 0.2"
+        " --discard-untrimmed"
+        " -j {threads}"
+        " -m 19"
+        " -M 21"
+        " --max-n 0"
+        " -o {output.fastq}"
+        " {input.fastq}"
+        " > {log}"
+
+
+rule starcode_clustering:
+    """Cluster DBS barcodes using starcode"""
+    output:
+        "barcodes.clstr"
+    input:
+        "barcodes.fasta.gz"
+    threads: 20
+    log: "barcodes.clstr.log"
+    shell:
+        "pigz -cd {input} |"
+        " starcode"
+        " -o {output}"
+        " -t {threads}"
+        " -d {config[barcode_max_dist]}"
+        " -r {config[barcode_ratio]}"
+        " --print-clusters"
+        " 2> {log}"
+
+
+rule fastqc:
+    """Create FastQC reports for trimmed reads"""
+    output:
+        qc = "trimmed.barcoded.{nr,[12]}_fastqc.html",
+        zip = "trimmed.barcoded.{nr,[12]}_fastqc.zip",
+    input:
+        reads = "trimmed.barcoded.{nr}.fastq.gz",
+    log: "trimmed.barcoded.{nr,[12]}_fastqc.log"
+    threads: 2  # Fix java.lang.OutOfMemoryError (https://github.com/s-andrews/FastQC/issues/24)
+    shell:
+        "fastqc {input.reads} -t {threads} 2> {log}"
+
+
+rule snaptools_align:
+    """Align reads to reference and sort by reads name"""
+    output:
+        bam = "mapped.bam"
+    input:
+        fastq1 = "trimmed.barcoded.1.fastq.gz",
+        fastq2 = "trimmed.barcoded.2.fastq.gz"
+    log: "mapped.bam.log"
+    threads: 20
+    conda: "snaptools_env.yaml"
+    params:
+        tmpdir = "$TMPDIR" if "TMPDIR" in os.environ else "./"
+    shell:
+        "snaptools align-paired-end"
+        " --input-reference={config[reference]}"
+        " --input-fastq1={input.fastq1}"
+        " --input-fastq2={input.fastq2}"
+        " --output-bam={output.bam}"
+        " --aligner=bwa"
+        " --path-to-aligner=$(which bwa)"
+        # TODO Faster decompression line?
+        " --read-fastq-command=zcat"
+        " --min-cov=0"
+        " --num-threads={threads}"
+        " --if-sort=True"
+        " --tmp-folder={params.tmpdir}"
+        " --overwrite=TRUE 2> {log}"
+
+
+rule snaptools_pre:
+    """Convert pair-end reads into fragments and for each fragment check: mapping 
+    quality, proper pairing, length, duplicates. Generates a snap-format 
+    (Single-Nucleus Accessibility Profiles) file and QC file."""
+    output:
+        snap = "mapped.snap",
+        snap_qc = "mapped.snap.qc",
+    input:
+        bam = "mapped.bam"
+    log: "mapped.snap.log"
+    threads: 20
+    conda: "snaptools_env.yaml"
+    shell:
+        "snaptools snap-pre"
+        " --input-file={input.bam}"
+        " --output-snap={output.snap}"
+        " --genome-name=mm10"
+        " --genome-size=mm10.chrom.size"
+        " --min-mapq=30"
+        " --min-flen=0"
+        " --max-flen=1000"
+        " --keep-chrm=TRUE"
+        " --keep-single=FALSE"
+        " --keep-secondary=FALSE"
+        " --overwrite=True"
+        " --max-num=1000000"
+        " --min-cov=100"
+        " --verbose=True 2> {log}"

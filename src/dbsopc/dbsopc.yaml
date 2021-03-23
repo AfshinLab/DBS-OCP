@@ -1,0 +1,14 @@
+# -- PREPROCESSING --
+# Handles follows read1 structure: <h1><barcode><h2><genomic insert><h3>
+h1: CAGTTGATCATCAGCAGGTAATCTGG
+h2: CATGACCTCTTGGAACTGTCAGATGTGTATAAGAGACAG
+h3: CTGTCTCTTATACACATCT
+barcode: BDHVBDHVBDHVBDHVBDHV
+
+# Starcode clustering parameters
+barcode_max_dist: 2
+barcode_ratio: 5
+
+# -- ALIGNMENT --
+reference:  # Path to BWA indexed reference
+reference_name:
