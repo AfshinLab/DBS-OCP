@@ -149,29 +149,43 @@ def run_tagfastq(
             BarcodeReader(uncorrected_barcodes)
         )
 
-        for read1, read2 in tqdm(reader, desc="Read pairs processed", disable=False):
-            # Header parsing
-            summary["Read pairs read"] += 1
-
-            uncorrected_barcode_seq = uncorrected_barcode_reader.get_barcode(read1.name)
-            corrected_barcode_seq = corrected_barcodes.get(uncorrected_barcode_seq)
-
-            # Check if barcode was found and update header with barcode info.
-            if corrected_barcode_seq:
-                name = read1.name.split(maxsplit=1)[0]
-                read1.name = f"{corrected_barcode_seq}:{name}\tCB:Z:{corrected_barcode_seq}"
-                read2.name = f"{corrected_barcode_seq}:{name}\tCB:Z:{corrected_barcode_seq}"
-            else:
-                summary["Reads missing barcode"] += 1
-                continue
-
-            # Write to out
-            summary["Read pairs written"] += 1
-            writer.write(read1, read2)
+        add_barcode_to_reads(reader, writer, uncorrected_barcode_reader,
+                             corrected_barcodes, summary)
 
     summary.print_stats(__name__)
 
     logger.info("Finished")
+
+
+def add_barcode_to_reads(reader, writer, barcode_reader, corrected_barcodes, summary):
+    """
+    Parse input read pairs and add the corresponding barcode if found before writing to
+    out.
+    :param reader: Open dnaio object with input read pairs
+    :param writer: Open dnaio object to write output read pairs
+    :param barcode_reader: BarcodeReader instance to match uncorrected barcodes to reads
+    :param corrected_barcodes: mapping from uncorrected to corrected barcode
+    :param summary: Summary instance
+    :return:
+    """
+    for read1, read2 in tqdm(reader, desc="Read pairs processed", disable=False):
+        summary["Read pairs read"] += 1
+
+        # Get corrected barcode if exists
+        uncorrected_barcode_seq = barcode_reader.get_barcode(read1.name)
+        corrected_barcode_seq = corrected_barcodes.get(uncorrected_barcode_seq)
+
+        if corrected_barcode_seq is not None:
+            # Update read names with barcode info
+            name = read1.name.split(maxsplit=1)[0]
+            read1.name = f"{corrected_barcode_seq}:{name}\tCB:Z:{corrected_barcode_seq}"
+            read2.name = f"{corrected_barcode_seq}:{name}\tCB:Z:{corrected_barcode_seq}"
+        else:
+            summary["Reads missing barcode"] += 1
+            continue
+
+        summary["Read pairs written"] += 1
+        writer.write(read1, read2)
 
 
 def parse_corrected_barcodes(open_file, summary, template, min_count):
@@ -193,6 +207,7 @@ def parse_corrected_barcodes(open_file, summary, template, min_count):
 
         if int(size) <= min_count:
             summary["Barcodes skipped"] += 1
+            summary["Read with barcodes with low count"] += int(size)
             continue
 
         if template and not match_template(canonical_seq, template):
