@@ -112,7 +112,7 @@ rule extract_DBS:
 rule starcode_clustering:
     """Cluster DBS barcodes using starcode"""
     output:
-        "barcodes.clstr"
+        "barcodes.clstr.gz"
     input:
         "barcodes.fastq.gz"
     threads: 20
@@ -120,12 +120,12 @@ rule starcode_clustering:
     shell:
         "pigz -cd {input} |"
         " starcode"
-        " -o {output}"
         " -t {threads}"
         " -d {config[barcode_max_dist]}"
         " -r {config[barcode_ratio]}"
         " --print-clusters"
         " 2> {log}"
+        " | pigz -9 > {output}"
 
 
 rule fastqc:

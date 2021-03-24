@@ -23,6 +23,7 @@ import logging
 import sys
 
 import dnaio
+from xopen import xopen
 
 from dbsopc.utils import tqdm, Summary
 
@@ -120,7 +121,7 @@ def run_tagfastq(
     # Get the corrected barcodes and create a dictionary pointing each raw barcode to
     # its canonical sequence.
     template = [set(IUPAC[base]) for base in pattern_match] if pattern_match else []
-    with open(corrected_barcodes, "r") as reader:
+    with xopen(corrected_barcodes, "r") as reader:
         corrected_barcodes = parse_corrected_barcodes(reader, summary, template,
                                                       min_count)
 
