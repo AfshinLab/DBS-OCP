@@ -139,7 +139,7 @@ rule fastqc:
         "fastqc {input.reads} -t {threads} 2> {log}"
 
 
-rule snaptools_align:
+rule map:
     """Align reads to reference and sort by reads name"""
     output:
         bam = "mapped.bam"
@@ -148,24 +148,21 @@ rule snaptools_align:
         fastq2 = "trimmed.barcoded.2.fastq.gz"
     log: "mapped.bam.log"
     threads: 20
-    conda: "snaptools_env.yaml"
     params:
-        tmpdir = "$TMPDIR" if "TMPDIR" in os.environ else "./"
+        tmpdir = "-T $TMPDIR" if "TMPDIR" in os.environ else ""
     shell:
-        "snaptools align-paired-end"
-        " --input-reference={config[reference]}"
-        " --input-fastq1={input.fastq1}"
-        " --input-fastq2={input.fastq2}"
-        " --output-bam={output.bam}"
-        " --aligner=bwa"
-        " --path-to-aligner=$(which bwa)"
-        # TODO Faster decompression line?
-        " --read-fastq-command=zcat"
-        " --min-cov=0"
-        " --num-threads={threads}"
-        " --if-sort=True"
-        " --tmp-folder={params.tmpdir}"
-        " --overwrite=TRUE 2> {log}"
+        "(bwa mem"
+        " -t {threads}"
+        " -C"
+        " {config[reference]}"
+        " {input.fastq1}"
+        " {input.fastq2}"
+        " |"
+        " samtools sort -"
+        " -n"
+        " -@ {threads}"
+        " -o {output.bam}"
+        " {params.tmpdir}) 2> {log}"
 
 
 rule snaptools_pre:

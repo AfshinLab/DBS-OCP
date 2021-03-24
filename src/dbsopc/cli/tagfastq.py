@@ -157,8 +157,9 @@ def run_tagfastq(
 
             # Check if barcode was found and update header with barcode info.
             if corrected_barcode_seq:
-                read1.name = f"{corrected_barcode_seq}:{read1.name}"
-                read2.name = f"{corrected_barcode_seq}:{read2.name}"
+                name = read1.name.split(maxsplit=1)[0]
+                read1.name = f"{corrected_barcode_seq}:{name}\tCB:Z:{corrected_barcode_seq}"
+                read2.name = f"{corrected_barcode_seq}:{name}\tCB:Z:{corrected_barcode_seq}"
             else:
                 summary["Reads missing barcode"] += 1
                 continue
