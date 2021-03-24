@@ -13,8 +13,18 @@ inputs_preprocess = [
     "trimmed.barcoded.2_fastqc.html",
 ]
 
+inputs_align = [
+    "mapped.snap",
+    "mapped.snap.qc",
+]
+
 rule final:
-    input: inputs_preprocess
+    input: inputs_preprocess, inputs_align
+
+
+rule align:
+    """Align reads and generate SNAP files for downstream analysis"""
+    input: inputs_align
 
 
 rule preprocess:
@@ -57,19 +67,16 @@ rule tag:
         r2_fastq="trimmed.barcoded.2.fastq.gz"
     input:
         interleaved_fastq="trimmed.fastq",
-        uncorrected_barcodes="barcodes.fasta.gz",
+        uncorrected_barcodes="barcodes.fastq.gz",
         corrected_barcodes="barcodes.clstr"
     log: "trimmed.barcoded.1.fastq.log"
     threads: 1
     shell:
-        "blr tagfastq"
+        "dbsopc tagfastq"
         " --o1 {output.r1_fastq}"
         " --o2 {output.r2_fastq}"
-        " -b {config[cluster_tag]}"
-        " -s {config[sequence_tag]}"
-        " --mapper {config[read_mapper]}"
+        " --min-count 2"
         " --pattern-match {config[barcode]}"
-        " --sample-nr {config[sample_nr]}"
         " {input.uncorrected_barcodes}"
         " {input.corrected_barcodes}"
         " {input.interleaved_fastq}"
@@ -79,7 +86,7 @@ rule tag:
 rule extract_DBS:
     """Extract barcode sequence from read1 FASTQ"""
     output:
-        fastq="barcodes.fasta.gz"
+        fastq="barcodes.fastq.gz"
     input:
          fastq="reads.1.fastq.gz"
     log: "barcodes.fasta.log"
@@ -105,7 +112,7 @@ rule starcode_clustering:
     output:
         "barcodes.clstr"
     input:
-        "barcodes.fasta.gz"
+        "barcodes.fastq.gz"
     threads: 20
     log: "barcodes.clstr.log"
     shell:
@@ -177,8 +184,9 @@ rule snaptools_pre:
         "snaptools snap-pre"
         " --input-file={input.bam}"
         " --output-snap={output.snap}"
-        " --genome-name=mm10"
-        " --genome-size=mm10.chrom.size"
+        " --genome-name={config[reference_name]}"
+        # For genome-size -> file with chromosome name and length on 1st and 2nd column
+        " --genome-size={config[reference]}.fai" 
         " --min-mapq=30"
         " --min-flen=0"
         " --max-flen=1000"

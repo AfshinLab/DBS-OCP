@@ -53,14 +53,14 @@ def add_arguments(parser):
         "--dag", default=False, action='store_true',
         help="Print the dag in the graphviz dot language (requires graphviz to be "
              "installed). Default: %(default)s. To get output to pdf file, pipe output "
-             "into dot as follows: blr run --dag | dot -Tpdf > dag.pdf"
+             "into dot as follows: dbsopc run --dag | dot -Tpdf > dag.pdf"
     )
     dags.add_argument(
         "--filegraph", default=False, action='store_true',
         help="Print the file graph showing input/output file from rules in the "
              "graphviz dot language (requires graphviz to be installed). Default: "
              "%(default)s. To get output to pdf file, pipe output into dot "
-             "as follows: blr run --filegraph | dot -Tpdf > filegraph.pdf"
+             "as follows: dbsopc run --filegraph | dot -Tpdf > filegraph.pdf"
     )
     parser.add_argument(
         'targets', nargs='*', default=[],

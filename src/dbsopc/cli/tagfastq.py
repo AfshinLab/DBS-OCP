@@ -121,8 +121,8 @@ def run_tagfastq(
     # its canonical sequence.
     template = [set(IUPAC[base]) for base in pattern_match] if pattern_match else []
     with open(corrected_barcodes, "r") as reader:
-        corrected_barcodes, heap = parse_corrected_barcodes(reader, summary, template,
-                                                            min_count)
+        corrected_barcodes = parse_corrected_barcodes(reader, summary, template,
+                                                      min_count)
 
     in_interleaved = not input2
     logger.info(f"Input is {'interleaved' if in_interleaved else 'paired'} FASTQ.")
