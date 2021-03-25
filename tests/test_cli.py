@@ -58,8 +58,8 @@ def workdir(_workdir, tmp_path):
 def test_run(workdir):
     """Check that all expected files are created"""
     expected_files = [
-        "barcode.fastq.gz",
-        "barcode.clstr.gz",
+        "barcodes.fastq.gz",
+        "barcodes.clstr.gz",
         "trimmed.barcoded.1.fastq.gz",
         "trimmed.barcoded.2.fastq.gz",
         "trimmed.barcoded.1_fastqc.html",
