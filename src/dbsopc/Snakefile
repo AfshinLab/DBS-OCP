@@ -178,7 +178,6 @@ rule snaptools_pre:
         bam = "mapped.bam"
     log: "mapped.snap.log"
     threads: 20
-    conda: "snaptools_env.yaml"
     shell:
         "snaptools snap-pre"
         " --input-file={input.bam}"

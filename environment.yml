@@ -13,6 +13,7 @@ dependencies:
   - bioconda::starcode
   - conda-forge::tqdm
   - conda-forge::ruamel.yaml
+  - conda-forge::importlib_resources
   - bioconda::fastqc
   - pip
   - pip:
