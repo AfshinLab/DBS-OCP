@@ -40,7 +40,7 @@ rule trim:
     input:
         r1_fastq="reads.1.fastq.gz",
         r2_fastq="reads.2.fastq.gz",
-    log: "trimmed.log"
+    log: "trimmed.fastq.log"
     threads: workflow.cores - 1  # rule tag needs one thread
     params:
         five_prime = "XNNN" + config["h1"] + "N"*len(config["barcode"]) + config["h2"],
@@ -69,7 +69,7 @@ rule tag:
         interleaved_fastq="trimmed.fastq",
         uncorrected_barcodes="barcodes.fastq.gz",
         corrected_barcodes="barcodes.clstr.gz"
-    log: "trimmed.barcoded.1.fastq.log"
+    log: "trimmed.barcoded.1.fastq.gz.log"
     threads: 1
     shell:
         "dbsopc tagfastq"
@@ -89,7 +89,7 @@ rule extract_DBS:
         fastq="barcodes.fastq.gz"
     input:
          fastq="reads.1.fastq.gz"
-    log: "barcodes.fasta.log"
+    log: "barcodes.fasta.gz.log"
     threads: 20
     params:
         extract_len = len(config["h1"]),
@@ -116,7 +116,7 @@ rule starcode_clustering:
     input:
         "barcodes.fastq.gz"
     threads: 20
-    log: "barcodes.clstr.log"
+    log: "barcodes.clstr.gz.log"
     shell:
         "pigz -cd {input} |"
         " starcode"
@@ -135,7 +135,7 @@ rule fastqc:
         zip = "trimmed.barcoded.{nr,[12]}_fastqc.zip",
     input:
         reads = "trimmed.barcoded.{nr}.fastq.gz",
-    log: "trimmed.barcoded.{nr,[12]}_fastqc.log"
+    log: "trimmed.barcoded.{nr,[12]}_fastqc.gz.log"
     threads: 2  # Fix java.lang.OutOfMemoryError (https://github.com/s-andrews/FastQC/issues/24)
     shell:
         "fastqc {input.reads} -t {threads} 2> {log}"
