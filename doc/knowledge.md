@@ -17,6 +17,8 @@
     (Nextflow pipeline)
 - [scATAC_snakemake](https://github.com/dbrg77/scATAC_snakemake) 
     (Snakemake pipeline)
+- [snakepipes](https://github.com/maxplanck-ie/snakepipes) (Snakemake
+ pipeline collection which include ATAC seq workflow)
 
 ## Single-cell ATAC-seq
 
