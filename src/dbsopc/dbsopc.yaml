@@ -11,4 +11,4 @@ barcode_ratio: 5
 
 # -- ALIGNMENT --
 reference:  # Path to BWA indexed reference
-reference_name:
+reference_name: hg38 # See options in GENOMELIST (https://github.com/r3fang/SnapTools/blob/master/snaptools/global_var.py)

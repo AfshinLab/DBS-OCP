@@ -8,6 +8,7 @@ channels:
 dependencies:
   - conda-forge::python=3.8
   - bioconda::cutadapt
+  - bioconda::bwa
   - bioconda::samtools
   - bioconda::snakemake-minimal
   - bioconda::starcode

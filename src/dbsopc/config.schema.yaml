@@ -29,5 +29,6 @@ properties:
     type: ["null", "string"]
     description: Path to BWA indexed reference
   reference_name:
-    type: ["null", "string"]
-    description: Name of reference genome
+    type: string
+    description: Name of reference genome. See options in GENOMELIST (https://github.com/r3fang/SnapTools/blob/master/snaptools/global_var.py)
+    default: hg38
