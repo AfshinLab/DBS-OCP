@@ -1,5 +1,10 @@
+[![CI](https://github.com/AfshinLab/DBS-OCP/workflows/CI/badge.svg?branch=main)](https://github.com/AfshinLab/DBS-OCP/actions?query=branch%3Amain)
+
 # DBS-OCP
 DBS for Open Chromatin Profiling in single nucleii 
+
+- [Install](#install)
+- [Running analysis](#running-analysis)
 
 ## Install
 
