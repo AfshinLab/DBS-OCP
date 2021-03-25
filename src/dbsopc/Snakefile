@@ -89,7 +89,7 @@ rule extract_DBS:
         fastq="barcodes.fastq.gz"
     input:
          fastq="reads.1.fastq.gz"
-    log: "barcodes.fasta.gz.log"
+    log: "barcodes.fastq.gz.log"
     threads: 20
     params:
         extract_len = len(config["h1"]),
