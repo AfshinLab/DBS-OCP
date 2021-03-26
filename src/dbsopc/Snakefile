@@ -76,7 +76,7 @@ rule tag:
         "dbsopc tagfastq"
         " --o1 {output.r1_fastq}"
         " --o2 {output.r2_fastq}"
-        " --min-count 2"
+        " --min-count {config[min_count]}"
         " --pattern-match {config[barcode]}"
         " {input.uncorrected_barcodes}"
         " {input.corrected_barcodes}"
