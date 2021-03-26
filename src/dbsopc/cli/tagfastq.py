@@ -205,7 +205,7 @@ def parse_corrected_barcodes(open_file, summary, template, min_count):
         summary["Reads with corrected barcodes"] += int(size)
         summary["Uncorrected barcodes"] += len(cluster_seqs.split(","))
 
-        if int(size) <= min_count:
+        if int(size) < min_count:
             summary["Barcodes skipped"] += 1
             summary["Read with barcodes with low count"] += int(size)
             continue

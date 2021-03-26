@@ -11,6 +11,7 @@ inputs_preprocess = [
     "trimmed.barcoded.2.fastq.gz",
     "trimmed.barcoded.1_fastqc.html",
     "trimmed.barcoded.2_fastqc.html",
+    "barcodes_fastqc.html"
 ]
 
 inputs_align = [
@@ -129,13 +130,13 @@ rule starcode_clustering:
 
 
 rule fastqc:
-    """Create FastQC reports for trimmed reads"""
+    """Create FastQC reports for FASTQs"""
     output:
-        qc = "trimmed.barcoded.{nr,[12]}_fastqc.html",
-        zip = "trimmed.barcoded.{nr,[12]}_fastqc.zip",
+        qc = "{base}_fastqc.html",
+        zip = "{base}_fastqc.zip",
     input:
-        reads = "trimmed.barcoded.{nr}.fastq.gz",
-    log: "trimmed.barcoded.{nr,[12]}_fastqc.gz.log"
+        reads = "{base}.fastq.gz",
+    log: "{base}_fastqc.log"
     threads: 2  # Fix java.lang.OutOfMemoryError (https://github.com/s-andrews/FastQC/issues/24)
     shell:
         "fastqc {input.reads} -t {threads} 2> {log}"
@@ -195,3 +196,6 @@ rule snaptools_pre:
         " --max-num=1000000"
         " --min-cov=100"
         " --verbose=True 2> {log}"
+
+onsuccess:
+    shell("multiqc -f .")

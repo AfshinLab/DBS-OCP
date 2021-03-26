@@ -25,6 +25,10 @@ properties:
     type: integer
     description: Starcode parameter. Minimum difference in ratio for read count to cluster nodes
     default: 5
+  min_count:
+    type: integer
+    description: Minimum number of reads to include barcode in alignment
+    default: 1
   reference:
     type: ["null", "string"]
     description: Path to BWA indexed reference
