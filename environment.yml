@@ -16,6 +16,7 @@ dependencies:
   - conda-forge::ruamel.yaml
   - conda-forge::importlib_resources
   - bioconda::fastqc
+  - bioconda::multiqc
   - pip
   - pip:
       - snaptools

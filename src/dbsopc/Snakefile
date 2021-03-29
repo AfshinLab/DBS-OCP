@@ -197,5 +197,8 @@ rule snaptools_pre:
         " --min-cov=100"
         " --verbose=True 2> {log}"
 
+
+# Run MultiQC as a final set
 onsuccess:
-    shell("multiqc -f .")
+    print("Running MultiQC:")
+    shell("multiqc -f . --zip-data-dir")

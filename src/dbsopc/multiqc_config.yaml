@@ -2,12 +2,6 @@ title: "DBS-OPC run report"
 intro_text: "This is a collection of results from the DBS-OPC pipeline. Go to our
 <a href=https://github.com/AfshinLab/DBS-OCP>github page</a> for more information."
 
-table_columns_visible:
-    Cutadapt:
-        percent_trimmed: False
-    FastQC:
-        percent_duplicates: False
-
 fn_ignore_dirs:
     - '.snakemake'
 
@@ -16,8 +10,34 @@ run_modules:
     - cutadapt
     - custom_content
 
+module_order:
+    - cutadapt:
+        name: "Cutadapt (inserts)"
+        info: "run to extract inserts"
+        anchor: "cutadapt_inserts"
+        target: ""
+        path_filters:
+            - "*trimmed.fastq.log"
+    - cutadapt:
+        name: "Cutadapt (barcodes)"
+        info: "run to extract barcodes"
+        anchor: "cutadapt_barcodes"
+        path_filters:
+            - "*barcodes.fastq.gz.log"
+    - fastqc:
+        name: "FastQC (insert)"
+        info: "FastQC run on the trimmed inserts"
+        anchor: "fastqc_trimmed"
+        target: ""
+        path_filters:
+            - "*trimmed.barcoded*"
+    - fastqc:
+        name: "FastQC (barcodes)"
+        anchor: "fastqc_barcodes"
+        info: "FastQC run on the extracted barcodes"
+        path_filters:
+          - "*barcodes*"
+
 sp:
-    cutadapt:
-        fn: "trimmed.log"
     fastqc:
-        fn_re: "trimmed.barcoded.[1|2].fastq.gz"
+        fn: "*fastqc.zip"
