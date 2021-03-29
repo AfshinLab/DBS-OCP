@@ -224,7 +224,7 @@ rule snaptools_add_bmat:
         done = temp("add_bmat.done")
     input:
         snap = "mapped.bam"
-    log: "mapped.snap.add_bam.log"
+    log: "mapped.snap.add_bmat.log"
     threads: 20
     shell:
         "snaptools snap-add-bmat"
