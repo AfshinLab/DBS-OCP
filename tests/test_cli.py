@@ -15,13 +15,14 @@ CONFIG_NAME = "dbsocp.yaml"
 
 
 def test_environment():
-    subprocess.run(["python",  "--version"])
-    subprocess.run(["snakemake", "--version"])
-    subprocess.run(["starcode", "--version"])
-    subprocess.run(["cutadapt", "--version"])
-    subprocess.run(["bwa"])
-    subprocess.run(["samtools", "--version"])
-    subprocess.run(["snaptools", "--version"])
+    subprocess.run(["python",  "--version"], check=True)
+    subprocess.run(["snakemake", "--version"], check=True)
+    subprocess.run(["starcode", "--version"], check=True)
+    subprocess.run(["cutadapt", "--version"], check=True)
+    subprocess.run(["bwa"], check=True)
+    subprocess.run(["samblaster", "--version"], check=True)
+    subprocess.run(["samtools", "--version"], check=True)
+    subprocess.run(["snaptools", "--version"], check=True)
 
 
 def test_init(tmp_path):
