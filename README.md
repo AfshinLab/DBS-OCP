@@ -36,18 +36,18 @@ Required inputs:
 
 1. Setup analysis directory called `my_workdir`:
     ```
-    dbsopc init --read1 /path/to/read.1.fastq.gz my_workdir 
+    dbsocp init --read1 /path/to/read.1.fastq.gz my_workdir 
     ```
    This will create and populate the directory with symlinks to the paired
     FASTQ. 
 2. Update configs, here the path to the BWA indexed genome reference is added
-. To view current configs jsut run `dbsopc config` 
+. To view current configs jsut run `dbsocp config` 
     ```
-    dbsopc configs -s reference /path/to/reference
+    dbsocp configs -s reference /path/to/reference
     ```
 3. To run the full analysis type the following.  
     ```
-    dbsopc run
+    dbsocp run
     ```
    To only run the preprocessing steps (barcode correction, read trimming
    , barcode assignment and QC) include the argument `preprocess`. 
