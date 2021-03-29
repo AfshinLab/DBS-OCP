@@ -8,6 +8,7 @@ channels:
 dependencies:
   - conda-forge::python=3.8
   - bioconda::cutadapt
+  - conda-forge::python-isal>0.8.0 # See https://github.com/marcelm/cutadapt/issues/520
   - bioconda::bwa
   - bioconda::samtools
   - bioconda::snakemake-minimal
