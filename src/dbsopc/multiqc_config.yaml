@@ -9,6 +9,7 @@ run_modules:
     - fastqc
     - cutadapt
     - custom_content
+    - samblaster
 
 module_order:
     - cutadapt:

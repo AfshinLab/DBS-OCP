@@ -143,29 +143,37 @@ rule fastqc:
 
 
 rule map:
-    """Align reads to reference and sort by reads name"""
+    """Align reads to reference, mark duplicates and sort by reads name"""
     output:
         bam = "mapped.bam"
     input:
         fastq1 = "trimmed.barcoded.1.fastq.gz",
         fastq2 = "trimmed.barcoded.2.fastq.gz"
-    log: "mapped.bam.log"
+    log:
+        map = "mapped.bam.map.log",
+        mkdup = "mapped.bam.mkdup.log",
+        sort = "mapped.bam.sort.log"
     threads: 20
     params:
         tmpdir = "-T $TMPDIR" if "TMPDIR" in os.environ else ""
     shell:
-        "(bwa mem"
+        "bwa mem"
         " -t {threads}"
         " -C"
         " {config[reference]}"
         " {input.fastq1}"
         " {input.fastq2}"
+        " 2> {log.map}"
+        " |"
+        " samblaster"
+        " 2> {log.mkdup}"
         " |"
         " samtools sort -"
         " -n"
         " -@ {threads}"
         " -o {output.bam}"
-        " {params.tmpdir}) 2> {log}"
+        " {params.tmpdir}"
+        " 2> {log.sort}"
 
 
 rule snaptools_pre:
