@@ -15,12 +15,22 @@ inputs_preprocess = [
 ]
 
 inputs_align = [
+    "mapped.bam"
+]
+
+inputs_postprocess = [
     "mapped.snap",
     "mapped.snap.qc",
+    "add_bmat.done"
 ]
 
 rule final:
-    input: inputs_preprocess, inputs_align
+    input: inputs_preprocess, inputs_align, inputs_postprocess
+
+
+rule postprocess:
+    """Apply SnapTools to data"""
+    input: inputs_postprocess
 
 
 rule align:
@@ -204,6 +214,25 @@ rule snaptools_pre:
         " --max-num=1000000"
         " --min-cov=100"
         " --verbose=True 2> {log}"
+
+
+rule snaptools_add_bmat:
+    """Convert pair-end reads into fragments and for each fragment check: mapping 
+    quality, proper pairing, length, duplicates. Generates a snap-format 
+    (Single-Nucleus Accessibility Profiles) file and QC file."""
+    output:
+        done = temp("add_bmat.done")
+    input:
+        snap = "mapped.bam"
+    log: "mapped.snap.add_bam.log"
+    threads: 20
+    shell:
+        "snaptools snap-add-bmat"
+        " --snap-file={input.snap}"
+        " --bin-size-list {config[bin_sizes]}"
+        " --verbose=True 2> {log}"
+        " &&"
+        " touch {output}"
 
 
 # Run MultiQC as a final set

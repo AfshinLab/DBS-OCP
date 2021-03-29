@@ -36,3 +36,8 @@ properties:
     type: string
     description: Name of reference genome. See options in GENOMELIST (https://github.com/r3fang/SnapTools/blob/master/snaptools/global_var.py)
     default: hg38
+  bin_sizes:
+    type: ["string", "integer"]
+    description: Space separated integers of SnapTools bin sizes use for matrix generation
+    default: "5000 10000"
+    pattern: '^[0-9]+(\s[0-9]+)*$'
