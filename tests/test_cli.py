@@ -2,6 +2,7 @@ from pathlib import Path
 import pytest
 import shutil
 import subprocess
+import sys
 
 from dbsocp.cli.init import init
 from dbsocp.cli.config import change_config
@@ -15,14 +16,19 @@ CONFIG_NAME = "dbsocp.yaml"
 
 
 def test_environment():
-    subprocess.run(["python",  "--version"], check=True)
-    subprocess.run(["snakemake", "--version"], check=True)
-    subprocess.run(["starcode", "--version"], check=True)
-    subprocess.run(["cutadapt", "--version"], check=True)
-    subprocess.run(["bwa"], check=True)
-    subprocess.run(["samblaster", "--version"], check=True)
-    subprocess.run(["samtools", "--version"], check=True)
-    subprocess.run(["snaptools", "--version"], check=True)
+    tools = [
+        "python --version",
+        "snakemake --version",
+        "starcode --version",
+        "cutadapt --version",
+        "bwa",
+        "samblaster --version",
+        "samtools --version",
+        "snaptools --version",
+    ]
+    for tool in tools:
+        print(f"'$ {tool}'")
+        subprocess.run(tool.split(" "), stderr=sys.stdout)
 
 
 def test_init(tmp_path):
