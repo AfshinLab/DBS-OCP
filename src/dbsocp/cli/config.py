@@ -12,7 +12,7 @@ from ruamel.yaml import YAML
 from snakemake.utils import validate
 
 logger = logging.getLogger(__name__)
-DEFAULT_PATH = Path("dbsopc.yaml")
+DEFAULT_PATH = Path("dbsocp.yaml")
 SCHEMA_FILE = "config.schema.yaml"
 
 
@@ -82,7 +82,7 @@ def change_config(filename: Path, changes_set: List[Tuple[str, str]]):
         item[keys[-1]] = value
 
     # Confirm that configs is valid.
-    with resource_path('dbsopc', SCHEMA_FILE) as schema_path:
+    with resource_path('dbsocp', SCHEMA_FILE) as schema_path:
         validate(configs, str(schema_path))
 
     # Write first to temporary file then overwrite filename.

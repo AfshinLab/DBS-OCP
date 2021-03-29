@@ -8,12 +8,12 @@ import os.path
 from pathlib import Path
 import sys
 
-from dbsopc.utils import guess_paired_path
+from dbsocp.utils import guess_paired_path
 
 logger = logging.getLogger(__name__)
 
 
-CONFIGURATION_FILE_NAME = "dbsopc.yaml"
+CONFIGURATION_FILE_NAME = "dbsocp.yaml"
 MULTIQC_CONFIG_FILE_NAME = "multiqc_config.yaml"
 
 
@@ -49,7 +49,7 @@ def init(directory: Path, reads1: Path):
 
     logger.info(f"Directory {directory} initialized.")
     logger.info(
-        'Edit %s/%s, then run "cd %s && dbsopc run" to start the analysis',
+        'Edit %s/%s, then run "cd %s && dbsocp run" to start the analysis',
         directory,
         CONFIGURATION_FILE_NAME,
         directory,
@@ -69,7 +69,7 @@ def create_and_populate_analysis_directory(directory: Path, reads1: Path, reads2
 
 def write_config_to_dir(file_name: str, directory: Path):
     # Write the configuration file
-    configuration = read_binary("dbsopc", file_name)
+    configuration = read_binary("dbsocp", file_name)
     with (directory / file_name).open("wb") as f:
         f.write(configuration)
 

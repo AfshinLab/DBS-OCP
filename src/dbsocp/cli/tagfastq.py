@@ -25,7 +25,7 @@ import sys
 import dnaio
 from xopen import xopen
 
-from dbsopc.utils import tqdm, Summary
+from dbsocp.utils import tqdm, Summary
 
 logger = logging.getLogger(__name__)
 

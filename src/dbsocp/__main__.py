@@ -7,8 +7,8 @@ import pkgutil
 import importlib
 from argparse import ArgumentParser
 
-import dbsopc.cli as cli_package
-from dbsopc import __version__
+import dbsocp.cli as cli_package
+from dbsocp import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ def main(commandline_arguments=None) -> int:
         format="%(module)s - %(levelname)s: %(message)s"
     )
 
-    parser = ArgumentParser(description=__doc__, prog="dbsopc")
+    parser = ArgumentParser(description=__doc__, prog="dbsocp")
     parser.add_argument(
         "--version",
         action="version",

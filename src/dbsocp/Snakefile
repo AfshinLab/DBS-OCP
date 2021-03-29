@@ -2,7 +2,7 @@ import os
 
 from snakemake.utils import validate
 
-configfile: "dbsopc.yaml"
+configfile: "dbsocp.yaml"
 validate(config, "config.schema.yaml")
 
 
@@ -73,7 +73,7 @@ rule tag:
     log: "trimmed.barcoded.1.fastq.gz.log"
     threads: 1
     shell:
-        "dbsopc tagfastq"
+        "dbsocp tagfastq"
         " --o1 {output.r1_fastq}"
         " --o2 {output.r2_fastq}"
         " --min-count {config[min_count]}"

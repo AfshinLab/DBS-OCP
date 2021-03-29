@@ -3,15 +3,15 @@ import pytest
 import shutil
 import subprocess
 
-from dbsopc.cli.init import init
-from dbsopc.cli.config import change_config
-from dbsopc.cli.run import run
+from dbsocp.cli.init import init
+from dbsocp.cli.config import change_config
+from dbsocp.cli.run import run
 
 TESTDATA = Path("tests/testdata")
 TESTDATA_READ1 = TESTDATA / "reads.1.fastq.gz"
 TESTDATA_READ2 = TESTDATA / "reads.2.fastq.gz"
 TESTDATA_REFERENCE = (TESTDATA / "ref.fasta").absolute()
-CONFIG_NAME = "dbsopc.yaml"
+CONFIG_NAME = "dbsocp.yaml"
 
 
 def test_environment():

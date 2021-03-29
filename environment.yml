@@ -1,6 +1,6 @@
 # Whenever this file is updated, you need to run misc/condalock.sh to create
 # the environment.lock.yml file.
-name: dbsopc
+name: dbsocp
 channels:
   - conda-forge
   - bioconda
