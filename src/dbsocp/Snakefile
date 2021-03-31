@@ -1,4 +1,5 @@
 import os
+from subprocess import CalledProcessError
 
 from snakemake.utils import validate
 
@@ -223,16 +224,30 @@ rule snaptools_add_bmat:
     output:
         done = temp("add_bmat.done")
     input:
-        snap = "mapped.bam"
+        snap = "mapped.snap"
     log: "mapped.snap.add_bmat.log"
     threads: 20
-    shell:
-        "snaptools snap-add-bmat"
-        " --snap-file={input.snap}"
-        " --bin-size-list {config[bin_sizes]}"
-        " --verbose=True 2> {log}"
-        " &&"
-        " touch {output}"
+    run:
+        # Rule cannot be rerun without frist deleting current session.
+        # Try deleting first and then generate bmat.
+        try:
+            shell(
+                "snaptools snap-del"
+                " --snap-file={input.snap}"
+                " --session-name AM"
+                " > /dev/null"
+            )
+        except CalledProcessError:
+            pass
+        finally:
+            shell(
+                "snaptools snap-add-bmat"
+                " --snap-file={input.snap}"
+                " --bin-size-list {config[bin_sizes]}"
+                " --verbose=True > {log}"
+                " &&"
+                " touch {output}"
+            )
 
 
 # Run MultiQC as a final set
