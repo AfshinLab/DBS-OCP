@@ -6,7 +6,7 @@ import sys
 
 from dbsocp.cli.init import init
 from dbsocp.cli.config import change_config
-from dbsocp.cli.run import run
+from dbsocp.cli.run import run, SnakemakeError
 
 TESTDATA = Path("tests/testdata")
 TESTDATA_READ1 = TESTDATA / "reads.1.fastq.gz"
@@ -18,6 +18,7 @@ CONFIG_NAME = "dbsocp.yaml"
 def test_environment():
     tools = [
         "python --version",
+        "dbsocp --version",
         "snakemake --version",
         "starcode --version",
         "cutadapt --version",
@@ -49,8 +50,10 @@ def _workdir(tmp_path_factory):
     path = tmp_path_factory.mktemp(basename="analysis-") / "analysis"
     init(path, TESTDATA_READ1)
     change_config(path / CONFIG_NAME, [("reference", str(TESTDATA_REFERENCE))])
-
-    run(workdir=path)
+    try:
+        run(workdir=path, keepgoing=True)
+    except SnakemakeError:
+        pass
     return path
 
 
@@ -62,18 +65,24 @@ def workdir(_workdir, tmp_path):
     return path
 
 
-def test_run(workdir):
+expected_files = [
+    "barcodes.fastq.gz",
+    "barcodes.clstr.gz",
+    "trimmed.barcoded.1.fastq.gz",
+    "trimmed.barcoded.2.fastq.gz",
+    "trimmed.barcoded.1_fastqc.html",
+    "trimmed.barcoded.2_fastqc.html",
+    "mapped.bam",
+    "mapped.snap",
+    "mapped.snap.qc",
+    "mapped.sort.bam",
+    "mapped.sort.bam.bai",
+    "fragments.tsv.gz",
+    "fragments.tsv.gz.tbi",
+]
+
+
+@pytest.mark.parametrize("file", expected_files)
+def test_run_creates(workdir, file):
     """Check that all expected files are created"""
-    expected_files = [
-        "barcodes.fastq.gz",
-        "barcodes.clstr.gz",
-        "trimmed.barcoded.1.fastq.gz",
-        "trimmed.barcoded.2.fastq.gz",
-        "trimmed.barcoded.1_fastqc.html",
-        "trimmed.barcoded.2_fastqc.html",
-        "mapped.bam",
-        "mapped.snap",
-        "mapped.snap.qc",
-    ]
-    for file in expected_files:
-        assert (workdir / file).exists()
+    assert (workdir / file).exists()

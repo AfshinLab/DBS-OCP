@@ -37,3 +37,5 @@
  scATACseq processing, used with SnapATAC)
 - [SnapATAC](https://github.com/r3fang/SnapATAC) /  
     (R package for analysis of SNAP files from Snaptools)
+- [ArchR](https://github.com/GreenleafLab/ArchR) (R package, 
+    [website](https://www.archrproject.com/index.html))

@@ -19,19 +19,30 @@ inputs_align = [
     "mapped.bam"
 ]
 
-inputs_postprocess = [
+inputs_snaptools = [
     "mapped.snap",
     "mapped.snap.qc",
     "add_bmat.done"
 ]
 
+inputs_archr = [
+    "fragments.tsv.gz",
+    "fragments.tsv.gz.tbi",
+]
+
+
 rule final:
-    input: inputs_preprocess, inputs_align, inputs_postprocess
+    input: inputs_preprocess, inputs_align, inputs_snaptools, inputs_archr
 
 
-rule postprocess:
+rule archr:
+    """Apply ArchR to data"""
+    input: inputs_archr
+
+
+rule snaptools:
     """Apply SnapTools to data"""
-    input: inputs_postprocess
+    input: inputs_snaptools
 
 
 rule align:
@@ -187,6 +198,36 @@ rule map:
         " 2> {log.sort}"
 
 
+rule sort:
+    """Sort BAM by coordinate"""
+    output:
+        bam = "mapped.sort.bam"
+    input:
+        bam = "mapped.bam"
+    log: "mapped.sort.bam.log"
+    threads: 20
+    params:
+        tmpdir = "-T $TMPDIR" if "TMPDIR" in os.environ else ""
+    shell:
+        " samtools sort"
+        " -@ {threads}"
+        " -o {output.bam}"
+        " {params.tmpdir}"
+        " {input.bam}"
+        " 2> {log}"
+
+
+rule index:
+    """Index coordinate sorted BAM"""
+    output:
+        bai = "{base}.bam.bai"
+    input:
+        bam = "{base}.bam"
+    threads: 20
+    shell:
+        " samtools index -@ {threads} {input.bam}"
+
+
 rule snaptools_pre:
     """Convert pair-end reads into fragments and for each fragment check: mapping 
     quality, proper pairing, length, duplicates. Generates a snap-format 
@@ -248,6 +289,30 @@ rule snaptools_add_bmat:
                 " &&"
                 " touch {output}"
             )
+
+
+rule getfrags:
+    output:
+        frags = pipe("fragments.tsv")
+    input:
+        bam = "mapped.sort.bam",
+        bai = "mapped.sort.bam.bai"
+    log: "fragments.tsv.log"
+    shell:
+        "dbsocp getfrags"
+        " -o {output.frags}"
+        " {input.bam}"
+        " 2> {log}"
+
+
+rule index_frags:
+    output:
+        frags = "fragments.tsv.gz",
+        tbi = "fragments.tsv.gz.tbi"
+    input:
+        frags = "fragments.tsv"
+    shell:
+        "bgzip -c {input.frags} > {output.frags} && tabix -p bed {output.frags}"
 
 
 # Run MultiQC as a final set
