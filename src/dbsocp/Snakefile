@@ -165,7 +165,7 @@ rule fastqc:
 
 
 rule map:
-    """Align reads to reference, mark duplicates and sort by reads name"""
+    """Align reads to reference, mark duplicates and sort by coordinate"""
     output:
         bam = "mapped.bam"
     input:
@@ -173,7 +173,6 @@ rule map:
         fastq2 = "trimmed.barcoded.2.fastq.gz"
     log:
         map = "mapped.bam.map.log",
-        mkdup = "mapped.bam.mkdup.log",
         sort = "mapped.bam.sort.log"
     threads: 20
     params:
@@ -187,11 +186,7 @@ rule map:
         " {input.fastq2}"
         " 2> {log.map}"
         " |"
-        " samblaster"
-        " 2> {log.mkdup}"
-        " |"
         " samtools sort -"
-        " -n"
         " -@ {threads}"
         " -o {output.bam}"
         " {params.tmpdir}"
@@ -199,17 +194,18 @@ rule map:
 
 
 rule sort:
-    """Sort BAM by coordinate"""
+    """Sort BAM by name"""
     output:
-        bam = "mapped.sort.bam"
+        bam = "mapped.nsort.bam"
     input:
         bam = "mapped.bam"
-    log: "mapped.sort.bam.log"
+    log: "mapped.nsort.bam.log"
     threads: 20
     params:
         tmpdir = "-T $TMPDIR" if "TMPDIR" in os.environ else ""
     shell:
         " samtools sort"
+        " -n"
         " -@ {threads}"
         " -o {output.bam}"
         " {params.tmpdir}"
@@ -236,7 +232,7 @@ rule snaptools_pre:
         snap = "mapped.snap",
         snap_qc = "mapped.snap.qc",
     input:
-        bam = "mapped.bam"
+        bam = "mapped.nsort.bam"
     log: "mapped.snap.log"
     threads: 20
     shell:
@@ -295,8 +291,8 @@ rule getfrags:
     output:
         frags = pipe("fragments.tsv")
     input:
-        bam = "mapped.sort.bam",
-        bai = "mapped.sort.bam.bai"
+        bam = "mapped.bam",
+        bai = "mapped.bam.bai"
     log: "fragments.tsv.log"
     shell:
         "dbsocp getfrags"

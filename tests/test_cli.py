@@ -73,10 +73,10 @@ expected_files = [
     "trimmed.barcoded.1_fastqc.html",
     "trimmed.barcoded.2_fastqc.html",
     "mapped.bam",
+    "mapped.bam.bai",
     "mapped.snap",
     "mapped.snap.qc",
-    "mapped.sort.bam",
-    "mapped.sort.bam.bai",
+    "mapped.nsort.bam",
     "fragments.tsv.gz",
     "fragments.tsv.gz.tbi",
 ]
