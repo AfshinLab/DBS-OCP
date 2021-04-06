@@ -48,7 +48,7 @@ def add_arguments(parser):
 def main(args):
     logger.info("Starting Analysis")
     summary = Summary()
-    barcode_fragment_counts = Counter()
+    barcode_nfragments = Counter()
 
     # Containers for generating matrix
     indices = []
@@ -66,7 +66,7 @@ def main(args):
     for fragment in tqdm(parse_fragment_file(args.input), desc="Parsing fragments"):
         summary["Fragments read"] += 1
         barcode = fragment.barcode
-        barcode_fragment_counts[barcode] += 1
+        barcode_nfragments[barcode] += 1
 
         coord = (fragment.chromosome, fragment.start, fragment.end)
 
@@ -88,7 +88,7 @@ def main(args):
         summary["Fragments duplicates"] += 1
         update_matrix_data(prev_barcodes, barcode_index, index_barcode, indices, indptr)
 
-    summary["Barcodes reads"] = len(barcode_fragment_counts)
+    summary["Barcodes reads"] = len(barcode_nfragments)
 
     logger.info("Generating Barcode vs. Fragment matrix")
     # matrix
@@ -131,18 +131,8 @@ def main(args):
     bcs_cols = bcs_cols[in_lower]
     summary["Overlapping Barcodes"] = len(nr_overlapps)
 
-    # Iterate over overlapping position to get barcode pairs and calculate their
-    # jaccard index.
-    uf = UnionFind()
-    for nr_shared, i1, i2 in zip(nr_overlapps, bcs_rows, bcs_cols):
-        bc1 = index_barcode[i1]
-        bc2 = index_barcode[i2]
-        total = barcode_fragment_counts[bc1] + barcode_fragment_counts[bc2] - nr_shared
-        jaccard_index = nr_shared / total
-        logger.debug("Overlapping pair: {} {} {}".format(bc1, bc2, jaccard_index))
-        if jaccard_index > args.threshold:
-            summary["Barcodes merged"] += 1
-            uf.union(bc1, bc2)
+    uf = call_duplicates(nr_overlapps, bcs_rows, bcs_cols, index_barcode,
+                         barcode_nfragments, args.threshold, summary)
 
     if args.merges is not None:
         logger.info(f"Writing merged barcodes to {args.merges}.")
@@ -173,6 +163,23 @@ def main(args):
 
     logger.info("Finished")
     summary.print_stats(name=__name__)
+
+
+def call_duplicates(nr_overlapps, bcs_rows, bcs_cols, index_barcode,
+                    barcode_nfragments, threshold, summary) -> 'UnionFind':
+    """Iterate over overlapping positions and generate duplicate calls which are used
+     create a UnionFind object"""
+    uf = UnionFind()
+    for nr_shared, i1, i2 in zip(nr_overlapps, bcs_rows, bcs_cols):
+        bc1 = index_barcode[i1]
+        bc2 = index_barcode[i2]
+        total = barcode_nfragments[bc1] + barcode_nfragments[bc2] - nr_shared
+        jaccard_index = nr_shared / total
+        logger.debug("Overlapping pair: {} {} {}".format(bc1, bc2, jaccard_index))
+        if jaccard_index > threshold:
+            summary["Barcodes merged"] += 1
+            uf.union(bc1, bc2)
+    return uf
 
 
 def update_matrix_data(coord_barcodes, barcode_index, index_barcode, indices, indptr):
