@@ -49,7 +49,14 @@ def main(args):
     logger.info("Starting Analysis")
     summary = Summary()
     barcode_fragment_counts = Counter()
-    dup_positions = OrderedDict()
+
+    # Containers for generating matrix
+    indices = []
+    indptr = [0]
+    barcode_index = OrderedDict()
+    index_barcode = {}
+
+    # Constants
     MIN_OVERLAPS = 1
 
     coord_prev = (None, -1, -1)
@@ -69,35 +76,21 @@ def main(args):
             continue
 
         if prev_dup:
-            dup_positions[coord_prev] = prev_barcodes
+            summary["Fragments duplicates"] += 1
+            update_matrix_data(prev_barcodes, barcode_index, index_barcode, indices,
+                               indptr)
             prev_dup = False
 
         coord_prev = coord
         prev_barcodes = {barcode}
 
     if prev_dup:
-        dup_positions[coord_prev] = prev_barcodes
+        summary["Fragments duplicates"] += 1
+        update_matrix_data(prev_barcodes, barcode_index, index_barcode, indices, indptr)
 
     summary["Barcodes reads"] = len(barcode_fragment_counts)
-    summary["Fragments duplicates"] = len(dup_positions)
 
     logger.info("Generating Barcode vs. Fragment matrix")
-    # Prepare to generate sparse matrix
-    indices = []
-    indptr = [0]
-    data = []
-    barcodes = OrderedDict()
-    barcodes_index = {}
-    for coord, coord_barcodes in dup_positions.items():
-        for barcode in coord_barcodes:
-            index = barcodes.setdefault(barcode, len(barcodes))
-            barcodes_index[index] = barcode
-            indices.append(index)
-            data.append(1)
-        indptr.append(len(indices))
-    del dup_positions
-    del barcodes
-
     # matrix
     #                              barcodes
     #                           Bc1 Bc2 ... BcN
@@ -107,9 +100,9 @@ def main(args):
     #               coord3  |   0   0   ... 1   |
     #               coord4  |   1   1   ... 0   |
     #                       --------------------
+    data = np.ones(len(indices))
     matrix = scipy.sparse.csr_matrix((data, indices, indptr), dtype=int)
-    del indptr
-    del indices
+    del indptr, indices, barcode_index, data
 
     logger.info("Find overlapping barcodes")
     # Get overlapping barcodes
@@ -142,8 +135,8 @@ def main(args):
     # jaccard index.
     uf = UnionFind()
     for nr_shared, i1, i2 in zip(nr_overlapps, bcs_rows, bcs_cols):
-        bc1 = barcodes_index[i1]
-        bc2 = barcodes_index[i2]
+        bc1 = index_barcode[i1]
+        bc2 = index_barcode[i2]
         total = barcode_fragment_counts[bc1] + barcode_fragment_counts[bc2] - nr_shared
         jaccard_index = nr_shared / total
         logger.debug("Overlapping pair: {} {} {}".format(bc1, bc2, jaccard_index))
@@ -180,6 +173,14 @@ def main(args):
 
     logger.info("Finished")
     summary.print_stats(name=__name__)
+
+
+def update_matrix_data(coord_barcodes, barcode_index, index_barcode, indices, indptr):
+    for barcode in coord_barcodes:
+        index = barcode_index.setdefault(barcode, len(barcode_index))
+        index_barcode[index] = barcode
+        indices.append(index)
+    indptr.append(len(indices))
 
 
 def parse_fragment_file(file: str):
