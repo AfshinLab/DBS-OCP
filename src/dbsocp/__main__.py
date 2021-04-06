@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def main(commandline_arguments=None) -> int:
     logging.basicConfig(
         level=logging.INFO,
-        format="%(module)s - %(levelname)s: %(message)s"
+        format="%(asctime)s - %(module)s - %(levelname)s: %(message)s"
     )
 
     parser = ArgumentParser(description=__doc__, prog="dbsocp")
@@ -59,7 +59,6 @@ def main(commandline_arguments=None) -> int:
     else:
         module = args.module
         del args.module
-        del args.debug
 
         # Print settings for module
         module_name = module.__name__.split('.')[-1]

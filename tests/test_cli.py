@@ -78,6 +78,8 @@ expected_files = [
     "mapped.nsort.bam",
     "fragments.tsv.gz",
     "fragments.tsv.gz.tbi",
+    "fragments.merged.tsv.gz",
+    "fragments.merged.tsv.gz.tbi",
 ]
 
 

@@ -26,8 +26,8 @@ inputs_snaptools = [
 ]
 
 inputs_archr = [
-    "fragments.tsv.gz",
-    "fragments.tsv.gz.tbi",
+    "fragments.merged.tsv.gz",
+    "fragments.merged.tsv.gz.tbi",
 ]
 
 
@@ -301,12 +301,29 @@ rule getfrags:
         " 2> {log}"
 
 
+rule mergedups:
+    output:
+        frags = pipe("fragments.merged.tsv"),
+        merges = "barcode_merges.tsv"
+    input:
+        frags = "fragments.tsv.gz",
+        index = "fragments.tsv.gz.tbi"
+    log: "fragments.merged.tsv.log"
+    shell:
+        "dbsocp mergedups"
+        " -o {output.frags}"
+        " -m {output.merges}"
+        " --threshold 0.5"
+        " {input.frags}"
+        " 2> {log}"
+
+
 rule index_frags:
     output:
-        frags = "fragments.tsv.gz",
-        tbi = "fragments.tsv.gz.tbi"
+        frags = "{base}.tsv.gz",
+        tbi = "{base}.tsv.gz.tbi"
     input:
-        frags = "fragments.tsv"
+        frags = "{base}.tsv"
     shell:
         "bgzip -c {input.frags} > {output.frags} && tabix -p bed {output.frags}"
 

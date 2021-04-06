@@ -18,6 +18,7 @@ dependencies:
   - conda-forge::importlib_resources
   - bioconda::fastqc
   - bioconda::multiqc
-  - pip
+  - conda-forge::scipy
+  - conda-forge::pip
   - pip:
       - snaptools
