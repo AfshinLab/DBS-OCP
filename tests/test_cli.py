@@ -23,7 +23,6 @@ def test_environment():
         "starcode --version",
         "cutadapt --version",
         "bwa",
-        "samblaster --version",
         "samtools --version",
         "snaptools --version",
     ]
