@@ -2,12 +2,12 @@ import re
 from pathlib import Path
 import sys
 from collections import Counter
+from functools import partial
 
-if sys.stderr.isatty():
-    from tqdm import tqdm
-else:
-    def tqdm(iterable, **kwargs):
-        return iterable
+from tqdm import tqdm as std_tqdm
+
+# Disable on non-TTY and use 1000 unit divisor
+tqdm = partial(std_tqdm, disable=None, unit_scale=True)
 
 
 def is_1_2(s, t):
