@@ -4,13 +4,14 @@ Convert BAM to Fragment file (BED)
 For info on Fragment files go to:
 https://support.10xgenomics.com/single-cell-atac/software/pipelines/latest/output/fragments
 """
-from tqdm import tqdm
 import logging
 from collections import Counter
 import sys
 
 import pysam
 from xopen import xopen
+
+from dbsocp.utils import tqdm
 
 logger = logging.getLogger(__name__)
 
