@@ -66,7 +66,8 @@ def main(args):
         write_chromosome(outfile, cache, current_chrom, summary)
 
     summary["Duplication rate"] = 100 * summary["Pairs duplicate"] / \
-                                  (summary["Pairs read"] - summary["Pairs skipped"])
+        (summary["Pairs read"] - summary["Pairs skipped"])
+
     summary.print_stats()
 
 
@@ -97,7 +98,7 @@ def compute_five_prime_coords(read):
     cigar = read.cigartuples
     if read.is_reverse:
         # Add the suffix clip to the alignment end position
-        suffix_clip = sum([x[1] for x in takewhile(lambda x: x[0] == 4, reversed(cigar))])
+        suffix_clip = sum([x[1] for x in takewhile(lambda x: x[0] == 4, reversed(cigar))])  # noqa: E501
         return read.reference_end + suffix_clip
     else:
         # Subtract the prefix clip from the alignment position
