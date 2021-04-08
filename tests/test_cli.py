@@ -25,6 +25,7 @@ def test_environment():
         "bwa",
         "samtools --version",
         "snaptools --version",
+        "preseq",
     ]
     for tool in tools:
         print(f"'$ {tool}'")
@@ -80,6 +81,8 @@ expected_files = [
     "fragments.tsv.gz.tbi",
     "fragments.merged.tsv.gz",
     "fragments.merged.tsv.gz.tbi",
+    "preseq_c_curve.txt",
+    "multiqc_report.html",
 ]
 
 

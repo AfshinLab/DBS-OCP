@@ -9,7 +9,7 @@ run_modules:
     - fastqc
     - cutadapt
     - custom_content
-    - samblaster
+    - preseq
 
 module_order:
     - cutadapt:
@@ -42,3 +42,5 @@ module_order:
 sp:
     fastqc:
         fn: "*fastqc.zip"
+    preseq:
+        fn: "preseq_c_curve.txt"

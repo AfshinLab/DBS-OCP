@@ -16,7 +16,8 @@ inputs_preprocess = [
 ]
 
 inputs_align = [
-    "mapped.bam"
+    "mapped.bam",
+    "preseq_c_curve.txt"
 ]
 
 inputs_snaptools = [
@@ -181,6 +182,7 @@ rule map:
         "bwa mem"
         " -t {threads}"
         " -C"
+        " -M"
         " {config[reference]}"
         " {input.fastq1}"
         " {input.fastq2}"
@@ -313,7 +315,7 @@ rule mergedups:
         "dbsocp mergedups"
         " -o {output.frags}"
         " -m {output.merges}"
-        " --threshold 0.5"
+        " --threshold 0.2"
         " {input.frags}"
         " 2> {log}"
 
@@ -327,6 +329,18 @@ rule index_frags:
     shell:
         "bgzip -c {input.frags} > {output.frags} && tabix -p bed {output.frags}"
 
+
+rule preseq_c_curve:
+    output:
+        "preseq_c_curve.txt"
+    input:
+        "mapped.bam"
+    shell:
+        "preseq c_curve"
+        " -o {output}"
+        " -bam {input}"
+        " -pe"
+        " --seg_len 10000000"
 
 # Run MultiQC as a final set
 onsuccess:
