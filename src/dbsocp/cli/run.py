@@ -63,6 +63,13 @@ def add_arguments(parser):
              "as follows: dbsocp run --filegraph | dot -Tpdf > filegraph.pdf"
     )
     parser.add_argument(
+        "--snakemake-kws", nargs=2, metavar=("KEY", "VALUE"), action="append",
+        help=f"Give additional snakemake arguments not yet added to {__name__}. See "
+             f"the Snakemake API ("
+             f"https://snakemake.readthedocs.io/en/stable/api_reference/snakemake.html#"
+             f") for options."
+    )
+    parser.add_argument(
         'targets', nargs='*', default=[],
         help="File(s) to create. If omitted, the full pipeline is run."
     )
@@ -78,6 +85,7 @@ def main(args):
             force_run=args.force_run,
             printdag=args.dag,
             printfilegraph=args.filegraph,
+            snake_kws=dict(args.snakemake_kws),
             targets=args.targets)
     except SnakemakeError:
         sys.exit(1)
@@ -95,8 +103,10 @@ def run(
     printfilegraph: bool = False,
     targets=None,
     workdir=None,
-    snakefile="Snakefile"
+    snakefile="Snakefile",
+    snake_kws=None,
 ):
+    snake_kws = {} if snake_kws is None else snake_kws
     # snakemake sets up its own logging, and this cannot be easily changed
     # (setting keep_logger=True crashes), so remove our own log handler
     # for now
@@ -117,7 +127,8 @@ def run(
             targets=targets,
             workdir=workdir,
             use_conda=True,
-            printreason=dryrun
+            printreason=dryrun,
+            **snake_kws
         )
     if not success:
         raise SnakemakeError()
