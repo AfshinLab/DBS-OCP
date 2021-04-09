@@ -15,6 +15,14 @@ TESTDATA_REFERENCE = (TESTDATA / "ref.fasta").absolute()
 CONFIG_NAME = "dbsocp.yaml"
 
 
+def print_all_logs(workdir: Path):
+    """Print out all snakemake logs in workdir if they exists"""
+    for log in workdir.glob("**/*.log"):
+        print("==> ", log.name, " <==")
+        with log.open() as f:
+            print(f.read())
+
+
 def test_environment():
     tools = [
         "python --version",
@@ -89,4 +97,7 @@ expected_files = [
 @pytest.mark.parametrize("file", expected_files)
 def test_run_creates(workdir, file):
     """Check that all expected files are created"""
-    assert (workdir / file).exists()
+    if not (workdir / file).exists():
+        print(f"File {file} not found! See logs below:")
+        print_all_logs(workdir)
+        raise AssertionError
