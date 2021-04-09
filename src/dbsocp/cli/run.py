@@ -64,6 +64,7 @@ def add_arguments(parser):
     )
     parser.add_argument(
         "--snakemake-kws", nargs=2, metavar=("KEY", "VALUE"), action="append",
+        default=[],
         help=f"Give additional snakemake arguments not yet added to {__name__}. See "
              f"the Snakemake API ("
              f"https://snakemake.readthedocs.io/en/stable/api_reference/snakemake.html#"
