@@ -17,12 +17,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.8
+          mamba-version: "*"
       - name: Create Conda environment
         run: |
           conda info
-          envfile=environment.yml
-          conda env create -n testenv -f ${envfile}
-          conda install -n testenv flake8 pytest
+          mamba env create -n testenv -f environment.yml
+          mamba install -n testenv flake8 pytest
       - name: Run flake8
         run: |
           source $CONDA/etc/profile.d/conda.sh
