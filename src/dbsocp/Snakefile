@@ -266,27 +266,19 @@ rule snaptools_add_bmat:
         snap = "mapped.snap"
     log: "mapped.snap.add_bmat.log"
     threads: 20
-    run:
+    shell:
         # Rule cannot be rerun without frist deleting current session.
         # Try deleting first and then generate bmat.
-        try:
-            shell(
-                "snaptools snap-del"
-                " --snap-file={input.snap}"
-                " --session-name AM"
-                " > /dev/null"
-            )
-        except CalledProcessError:
-            pass
-        finally:
-            shell(
-                "snaptools snap-add-bmat"
-                " --snap-file={input.snap}"
-                " --bin-size-list {config[bin_sizes]}"
-                " --verbose=True > {log}"
-                " &&"
-                " touch {output}"
-            )
+        "snaptools snap-del"
+        " --snap-file={input.snap}"
+        " --session-name AM"
+        " || true;"
+        " snaptools snap-add-bmat"
+        " --snap-file={input.snap}"
+        " --bin-size-list {config[bin_sizes]}"
+        " --verbose=True > {log}"
+        " &&"
+        " touch {output}"
 
 
 rule getfrags:
