@@ -24,6 +24,10 @@ logger = logging.getLogger(__name__)
 # - http://databio.org/posts/tabix_files.html
 # - https://github.com/databio/pararead
 
+# Constants
+MIN_OVERLAPS = 1
+MAX_BARCODES_PRECENTILE = 99
+
 
 def add_arguments(parser):
     parser.add_argument(
@@ -56,9 +60,6 @@ def main(args):
     barcode_index = OrderedDict()
     index_barcode = {}
 
-    # Constants
-    MIN_OVERLAPS = 1
-
     coord_prev = (None, -1, -1)
     prev_barcodes = set()
     prev_dup = False
@@ -76,7 +77,7 @@ def main(args):
             continue
 
         if prev_dup:
-            summary["Fragments duplicates"] += 1
+            summary["Fragments duplicate"] += 1
             update_matrix_data(prev_barcodes, barcode_index, index_barcode, indices,
                                indptr)
             prev_dup = False
@@ -85,7 +86,7 @@ def main(args):
         prev_barcodes = {barcode}
 
     if prev_dup:
-        summary["Fragments duplicates"] += 1
+        summary["Fragments duplicate"] += 1
         update_matrix_data(prev_barcodes, barcode_index, index_barcode, indices, indptr)
 
     summary["Barcodes reads"] = len(barcode_nfragments)
@@ -103,6 +104,13 @@ def main(args):
     data = np.ones(len(indices))
     matrix = scipy.sparse.csr_matrix((data, indices, indptr), dtype=int)
     del indptr, indices, barcode_index, data
+
+    # Remove coordinates that are covered by more than the MAX_BARCODES_PRECENTILE
+    # percentile in number of barcodes
+    bcs_per_coord = matrix.sum(axis=1)
+    max_bcs = int(max(np.percentile(bcs_per_coord, MAX_BARCODES_PRECENTILE), 2))
+    logger.info(f"Filtering coordinate with more than {max_bcs} barcodes.")
+    matrix = matrix[np.ravel(bcs_per_coord) < max_bcs, :]
 
     logger.info("Find overlapping barcodes")
     # Get overlapping barcodes
@@ -125,10 +133,11 @@ def main(args):
     bcs_rows, bcs_cols = overlapping_bcs.nonzero()
     del overlapping_bcs
     in_lower = bcs_rows < bcs_cols
-    nr_overlapps = np.array(overlapps[bcs_rows[in_lower], bcs_cols[in_lower]]).flatten()
-    del overlapps
     bcs_rows = bcs_rows[in_lower]
     bcs_cols = bcs_cols[in_lower]
+    nr_overlapps = np.array(overlapps[bcs_rows, bcs_cols]).flatten()
+    del overlapps
+
     summary["Overlapping Barcodes"] = len(nr_overlapps)
 
     uf = call_duplicates(nr_overlapps, bcs_rows, bcs_cols, index_barcode,
@@ -147,9 +156,7 @@ def main(args):
         parser = parse_fragment_file(args.input)
         prev_fragment = next(parser)
         for fragment in tqdm(parser, desc="Update fragments", initial=1):
-
-            if fragment.barcode in uf:
-                fragment.barcode = uf[fragment.barcode]
+            fragment.barcode = uf[fragment.barcode]
 
             if fragment == prev_fragment:
                 prev_fragment.update(fragment)
@@ -170,7 +177,8 @@ def call_duplicates(nr_overlapps, bcs_rows, bcs_cols, index_barcode,
     """Iterate over overlapping positions and generate duplicate calls which are used
      create a UnionFind object"""
     uf = UnionFind()
-    for nr_shared, i1, i2 in zip(nr_overlapps, bcs_rows, bcs_cols):
+    for nr_shared, i1, i2 in tqdm(zip(nr_overlapps, bcs_rows, bcs_cols),
+                                  desc="Find overlaps", total=len(bcs_rows)):
         bc1 = index_barcode[i1]
         bc2 = index_barcode[i2]
         total = barcode_nfragments[bc1] + barcode_nfragments[bc2] - nr_shared
@@ -193,7 +201,7 @@ def update_matrix_data(coord_barcodes, barcode_index, index_barcode, indices, in
 def parse_fragment_file(file: str):
     with xopen(file) as f:
         for line in f:
-            chromosome, start, end, barcode, count = line.strip().split("\t")
+            chromosome, start, end, barcode, count, *_ = line.strip().split("\t")
             yield Fragment(chromosome, int(start), int(end), barcode, int(count))
 
 
