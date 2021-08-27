@@ -152,7 +152,11 @@ def main(args):
         import matplotlib.pyplot as plt
         threshold_index = np.min(np.where(jaccard_similarity == args.threshold))
 
-        plt.plot(jaccard_similarity, color="k", label="Jaccard similarity")
+        # Remove long tail
+        jaccard_cumsum = jaccard_similarity.cumsum() / jaccard_similarity.sum()
+        y = jaccard_similarity[jaccard_cumsum < 0.99]
+
+        plt.plot(y, color="k", label="Jaccard similarity")
         plt.axvline(threshold_index, 0, 1, color="r", label="Threshold")
         plt.xlabel("Barcode pair rank")
         plt.ylabel("Jaccard similarity")
