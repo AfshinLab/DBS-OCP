@@ -44,6 +44,11 @@ def add_arguments(parser):
              "<new_barcode>"
     )
     parser.add_argument(
+        "-p", "--plot-similarity",
+        help="Output plot of ranked jaccard similarity for overlapping barcode pairs "
+             "to file"
+    )
+    parser.add_argument(
         "-t", "--threshold", type=float, default=0.5,
         help="Jaccard index threshold value for merging barcodes. Default: %(default)s"
     )
@@ -140,8 +145,19 @@ def main(args):
 
     summary["Overlapping Barcodes"] = len(nr_overlapps)
 
-    uf = call_duplicates(nr_overlapps, bcs_rows, bcs_cols, index_barcode,
-                         barcode_nfragments, args.threshold, summary)
+    uf, jaccard_similarity = call_duplicates(nr_overlapps, bcs_rows, bcs_cols, index_barcode,
+                                             barcode_nfragments, args.threshold, summary)
+
+    if args.plot_similarity:
+        import matplotlib.pyplot as plt
+        threshold_index = np.min(np.where(jaccard_similarity == args.threshold))
+
+        plt.plot(jaccard_similarity, color="k", label="Jaccard similarity")
+        plt.axvline(threshold_index, 0, 1, color="r", label="Threshold")
+        plt.xlabel("Barcode pair rank")
+        plt.ylabel("Jaccard similarity")
+        plt.legend(loc='upper right')
+        plt.savefig(args.plot_similarity)
 
     if args.merges is not None:
         logger.info(f"Writing merged barcodes to {args.merges}.")
@@ -177,17 +193,19 @@ def call_duplicates(nr_overlapps, bcs_rows, bcs_cols, index_barcode,
     """Iterate over overlapping positions and generate duplicate calls which are used
      create a UnionFind object"""
     uf = UnionFind()
+    jaccard_similarity = []
     for nr_shared, i1, i2 in tqdm(zip(nr_overlapps, bcs_rows, bcs_cols),
                                   desc="Find overlaps", total=len(bcs_rows)):
         bc1 = index_barcode[i1]
         bc2 = index_barcode[i2]
         total = barcode_nfragments[bc1] + barcode_nfragments[bc2] - nr_shared
         jaccard_index = nr_shared / total
+        jaccard_similarity.append(jaccard_index)
         logger.debug("Overlapping pair: {} {} {}".format(bc1, bc2, jaccard_index))
         if jaccard_index > threshold:
             summary["Barcodes merged"] += 1
             uf.union(bc1, bc2)
-    return uf
+    return uf, np.array(sorted(jaccard_similarity, reverse=True))
 
 
 def update_matrix_data(coord_barcodes, barcode_index, index_barcode, indices, indptr):
