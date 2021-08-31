@@ -4,7 +4,7 @@ Find barcodes and merge originating from the same droplet/compartment.
 
 from collections import OrderedDict, defaultdict, Counter
 import logging
-from typing import Dict
+from typing import Dict, Set
 
 import dataclasses
 
@@ -52,9 +52,32 @@ def add_arguments(parser):
         "-t", "--threshold", type=float, default=0.5,
         help="Jaccard index threshold value for merging barcodes. Default: %(default)s"
     )
+    parser.add_argument(
+        "-s", "--skip-contigs",
+        help="Comma separated list of contings to skip for merging"
+    )
 
 
 def main(args):
+    contigs = set(",".split(args.skip_contigs)) if args.skip_contigs is not None else set()
+    run_mergedups(
+        input=args.input,
+        output=args.output,
+        merges=args.merges,
+        plot_similarity=args.plot_similarity,
+        threshold=args.threshold,
+        skip_contigs=contigs
+    )
+
+
+def run_mergedups(
+        input: str,
+        output: str,
+        merges: str,
+        plot_similarity: str,
+        threshold: float,
+        skip_contigs: Set[str],
+):
     logger.info("Starting Analysis")
     summary = Summary()
     barcode_nfragments = Counter()
@@ -68,8 +91,11 @@ def main(args):
     coord_prev = (None, -1, -1)
     prev_barcodes = set()
     prev_dup = False
-    logger.info(f"Reading fragments from {args.input}")
-    for fragment in tqdm(parse_fragment_file(args.input), desc="Parsing fragments"):
+    logger.info(f"Reading fragments from {input}")
+    for fragment in tqdm(parse_fragment_file(input), desc="Parsing fragments"):
+        if fragment.chromosome in skip_contigs:
+            continue
+
         summary["Fragments read"] += 1
         barcode = fragment.barcode
         barcode_nfragments[barcode] += 1
@@ -146,11 +172,11 @@ def main(args):
     summary["Overlapping Barcodes"] = len(nr_overlapps)
 
     uf, jaccard_similarity = call_duplicates(nr_overlapps, bcs_rows, bcs_cols, index_barcode,
-                                             barcode_nfragments, args.threshold, summary)
+                                             barcode_nfragments, threshold, summary)
 
-    if args.plot_similarity:
+    if plot_similarity is not None:
         import matplotlib.pyplot as plt
-        threshold_index = np.min(np.where(jaccard_similarity == args.threshold))
+        threshold_index = np.min(np.where(jaccard_similarity == threshold))
 
         # Remove long tail
         jaccard_cumsum = jaccard_similarity.cumsum() / jaccard_similarity.sum()
@@ -161,19 +187,19 @@ def main(args):
         plt.xlabel("Barcode pair rank")
         plt.ylabel("Jaccard similarity")
         plt.legend(loc='upper right')
-        plt.savefig(args.plot_similarity)
+        plt.savefig(plot_similarity)
 
-    if args.merges is not None:
-        logger.info(f"Writing merged barcodes to {args.merges}.")
-        with open(args.merges, "w") as outfile:
+    if merges is not None:
+        logger.info(f"Writing merged barcodes to {merges}.")
+        with open(merges, "w") as outfile:
             for component in uf.connected_components():
                 for barcode in component:
                     if barcode != uf[barcode]:
                         print(barcode, uf[barcode], sep="\t", file=outfile)
 
-    logger.info(f"Writing updated fragments to {args.output}.")
-    with open(args.output, "w") as outfile:
-        parser = parse_fragment_file(args.input)
+    logger.info(f"Writing updated fragments to {output}.")
+    with open(output, "w") as outfile:
+        parser = parse_fragment_file(input)
         prev_fragment = next(parser)
         for fragment in tqdm(parser, desc="Update fragments", initial=1):
             fragment.barcode = uf[fragment.barcode]
