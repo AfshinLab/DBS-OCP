@@ -88,7 +88,7 @@ def run_mergedups(
     barcode_index = OrderedDict()
     index_barcode = {}
 
-    coord_prev = (None, -1, -1)
+    prev_fragment = Fragment(None, -1, -1, None, -1)
     prev_barcodes = set()
     prev_dup = False
     logger.info(f"Reading fragments from {input}")
@@ -100,9 +100,7 @@ def run_mergedups(
         barcode = fragment.barcode
         barcode_nfragments[barcode] += 1
 
-        coord = (fragment.chromosome, fragment.start, fragment.end)
-
-        if coord == coord_prev:
+        if fragment.match_coordinates(prev_fragment):
             prev_barcodes.add(barcode)
             prev_dup = True
             continue
@@ -113,7 +111,7 @@ def run_mergedups(
                                indptr)
             prev_dup = False
 
-        coord_prev = coord
+        prev_fragment = fragment
         prev_barcodes = {barcode}
 
     if prev_dup:
@@ -263,6 +261,10 @@ class Fragment:
 
     def update(self, other: 'Fragment'):
         self.count += other.count
+
+    def match_coordinates(self, other):
+        return (self.chromosome, self.start, self.end) == \
+               (other.chromosome, other.start, other.end)
 
     def __eq__(self, other) -> bool:
         return (self.chromosome, self.start, self.end, self.barcode) == \
