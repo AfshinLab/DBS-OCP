@@ -80,47 +80,7 @@ def run_mergedups(
 ):
     logger.info("Starting Analysis")
     summary = Summary()
-    barcode_nfragments = Counter()
 
-    # Containers for generating matrix
-    indices = []
-    indptr = [0]
-    barcode_index = OrderedDict()
-    index_barcode = {}
-
-    prev_fragment = Fragment(None, -1, -1, None, -1)
-    prev_barcodes = set()
-    prev_dup = False
-    logger.info(f"Reading fragments from {input}")
-    for fragment in tqdm(parse_fragment_file(input), desc="Parsing fragments"):
-        if fragment.chromosome in skip_contigs:
-            continue
-
-        summary["Fragments read"] += 1
-        barcode = fragment.barcode
-        barcode_nfragments[barcode] += 1
-
-        if fragment.match_coordinates(prev_fragment):
-            prev_barcodes.add(barcode)
-            prev_dup = True
-            continue
-
-        if prev_dup:
-            summary["Fragments duplicate"] += 1
-            update_matrix_data(prev_barcodes, barcode_index, index_barcode, indices,
-                               indptr)
-            prev_dup = False
-
-        prev_fragment = fragment
-        prev_barcodes = {barcode}
-
-    if prev_dup:
-        summary["Fragments duplicate"] += 1
-        update_matrix_data(prev_barcodes, barcode_index, index_barcode, indices, indptr)
-
-    summary["Barcodes reads"] = len(barcode_nfragments)
-
-    logger.info("Generating Barcode vs. Fragment matrix")
     # matrix
     #                              barcodes
     #                           Bc1 Bc2 ... BcN
@@ -130,9 +90,8 @@ def run_mergedups(
     #               coord3  |   0   0   ... 1   |
     #               coord4  |   1   1   ... 0   |
     #                       --------------------
-    data = np.ones(len(indices))
-    matrix = scipy.sparse.csr_matrix((data, indices, indptr), dtype=int)
-    del indptr, indices, barcode_index, data
+    # data = np.ones(len(indices))
+    matrix, index_barcode, barcode_nfragments = generate_frag_matrix(input, skip_contigs, summary)
 
     # Remove coordinates that are covered by more than the MAX_BARCODES_PRECENTILE
     # percentile in number of barcodes
@@ -214,6 +173,53 @@ def run_mergedups(
 
     logger.info("Finished")
     summary.print_stats(name=__name__)
+
+
+def generate_frag_matrix(input, skip_contigs, summary):
+    barcode_nfragments = Counter()
+
+    # Containers for generating matrix
+    indices = []
+    indptr = [0]
+    barcode_index = OrderedDict()
+    index_barcode = {}
+
+    prev_fragment = Fragment(None, -1, -1, None, -1)
+    prev_barcodes = set()
+    prev_dup = False
+    logger.info(f"Reading fragments from {input}")
+    for fragment in tqdm(parse_fragment_file(input), desc="Parsing fragments"):
+        if fragment.chromosome in skip_contigs:
+            continue
+
+        summary["Fragments read"] += 1
+        barcode = fragment.barcode
+        barcode_nfragments[barcode] += 1
+
+        if fragment.match_coordinates(prev_fragment):
+            prev_barcodes.add(barcode)
+            prev_dup = True
+            continue
+
+        if prev_dup:
+            summary["Fragments duplicate"] += 1
+            update_matrix_data(prev_barcodes, barcode_index, index_barcode, indices,
+                               indptr)
+            prev_dup = False
+
+        prev_fragment = fragment
+        prev_barcodes = {barcode}
+
+    if prev_dup:
+        summary["Fragments duplicate"] += 1
+        update_matrix_data(prev_barcodes, barcode_index, index_barcode, indices, indptr)
+
+    summary["Barcodes reads"] = len(barcode_nfragments)
+
+    logger.info("Generating Barcode vs. Fragment matrix")
+    data = np.ones(len(indices))
+    matrix = scipy.sparse.csr_matrix((data, indices, indptr), dtype=int)
+    return matrix, index_barcode, barcode_nfragments    
 
 
 def call_duplicates(nr_overlapps, bcs_rows, bcs_cols, index_barcode,
