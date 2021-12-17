@@ -4,7 +4,7 @@ Find barcodes and merge originating from the same droplet/compartment.
 
 from collections import OrderedDict, defaultdict, Counter
 import logging
-from typing import Dict, Set
+from typing import Dict, Set, Tuple
 
 import dataclasses
 
@@ -56,6 +56,10 @@ def add_arguments(parser):
         "-s", "--skip-contigs",
         help="Comma separated list of contings to skip for merging"
     )
+    parser.add_argument(
+        "--mode", choices=["fragment", "cutsite"], default="fragment",
+        help="Compare overlaps based on 'fragment' (default) or 'cutsite'." 
+    )
 
 
 def main(args):
@@ -66,7 +70,8 @@ def main(args):
         merges=args.merges,
         plot_similarity=args.plot_similarity,
         threshold=args.threshold,
-        skip_contigs=contigs
+        skip_contigs=contigs,
+        mode=args.mode,
     )
 
 
@@ -77,6 +82,7 @@ def run_mergedups(
         plot_similarity: str,
         threshold: float,
         skip_contigs: Set[str],
+        mode: str,
 ):
     logger.info("Starting Analysis")
     summary = Summary()
@@ -90,8 +96,12 @@ def run_mergedups(
     #               coord3  |   0   0   ... 1   |
     #               coord4  |   1   1   ... 0   |
     #                       --------------------
-    # data = np.ones(len(indices))
-    matrix, index_barcode, barcode_nfragments = generate_frag_matrix(input, skip_contigs, summary)
+    if mode == "fragment":
+        matrix, index_barcode, barcode_nfragments = generate_frag_matrix(input, skip_contigs, summary)
+    elif mode == "cutsite":
+        matrix, index_barcode, barcode_nfragments = generate_cutsite_matrix(input, skip_contigs, summary)
+    else:
+        raise ValueError(f"Unknown mode '{mode}'.")
 
     # Remove coordinates that are covered by more than the MAX_BARCODES_PRECENTILE
     # percentile in number of barcodes
@@ -133,16 +143,17 @@ def run_mergedups(
 
     if plot_similarity is not None:
         import matplotlib.pyplot as plt
-        threshold_index = np.min(np.where(jaccard_similarity == threshold))
-
+        threshold_index = (np.abs(jaccard_similarity - threshold)).argmin()
+        
         # Remove long tail
         jaccard_cumsum = jaccard_similarity.cumsum() / jaccard_similarity.sum()
         y = jaccard_similarity[jaccard_cumsum < 0.99]
 
         plt.plot(y, color="k", label="Jaccard similarity")
-        plt.axvline(threshold_index, 0, 1, color="r", label="Threshold")
+        plt.axvline(threshold_index, 0, 1, color="r", alpha=0.8, label="Threshold")
         plt.xlabel("Barcode pair rank")
         plt.ylabel("Jaccard similarity")
+        plt.xscale("log")
         plt.legend(loc='upper right')
         plt.savefig(plot_similarity)
 
@@ -175,7 +186,104 @@ def run_mergedups(
     summary.print_stats(name=__name__)
 
 
-def generate_frag_matrix(input, skip_contigs, summary):
+def generate_cutsite_matrix(input: str, skip_contigs: Set[str], summary: Dict[str, int]):
+    """Generate cutsite vs barcode matrix from fragment file."""
+    # Contants
+    BUFFER = 1000
+    DOUBLE_BUFFER = 2000
+
+    # Containers for generating matrix
+    indices = []
+    indptr = [0]
+    barcode_index = OrderedDict()
+    index_barcode = {}
+
+    barcode_nsites = Counter()
+
+    logger.info(f"Reading fragments from {input}")    
+    parser = parse_fragment_file(input)
+    
+    # Parse first frag
+    first_frag = next(parser)
+    summary["Fragments read"] += 1
+    cutsite1, cutsite2 = first_frag.get_cutsites()
+    
+    sites_cache = defaultdict(set)
+    sites_cache[cutsite1].add(first_frag.barcode)
+    sites_cache[cutsite2].add(first_frag.barcode)
+    next_checkpoint = cutsite1.position + DOUBLE_BUFFER
+    prev_chromosome = cutsite1.chromosome
+
+    # Parse rest
+    for fragment in tqdm(parser, desc="Parsing fragments", initial=1):
+        if fragment.chromosome in skip_contigs:
+            continue
+
+        cutsite1, cutsite2 = fragment.get_cutsites()
+        summary["Fragments read"] += 1
+        barcode = fragment.barcode
+
+        if cutsite1.chromosome != prev_chromosome:
+            for site, barcodes in sites_cache.items():
+                for barcode in barcodes:
+                    barcode_nsites[barcode] += 1
+                
+                if len(barcodes) < 2:
+                    continue
+            
+                summary["Cutsites duplicate"] += 1
+                update_matrix_data(barcodes, barcode_index, index_barcode, indices, indptr)
+
+            summary["Cutsites"] += len(sites_cache)
+            sites_cache.clear()
+            next_checkpoint = cutsite1.position + DOUBLE_BUFFER
+            prev_chromosome = cutsite1.chromosome
+        
+        elif cutsite1.position > next_checkpoint:
+            for site in sorted(sites_cache):
+                if cutsite1.position - site.position < BUFFER:
+                    break
+                
+                summary["Cutsites"] += 1
+                barcodes = sites_cache.pop(site)
+
+                for barcode in barcodes:
+                    barcode_nsites[barcode] += 1
+                
+                if len(barcodes) < 2:
+                    continue
+                
+                summary["Cutsites duplicate"] += 1
+                update_matrix_data(barcodes, barcode_index, index_barcode, indices, indptr)
+
+            next_checkpoint = cutsite1.position + DOUBLE_BUFFER
+
+        sites_cache[cutsite1].add(barcode)
+        sites_cache[cutsite2].add(barcode)
+
+            
+    for site, barcodes in sites_cache.items():
+        for barcode in barcodes:
+            barcode_nsites[barcode] += 1
+                
+        if len(barcodes) < 2:
+            continue
+    
+        summary["Cutsites duplicate"] += 1
+        update_matrix_data(barcodes, barcode_index, index_barcode, indices, indptr)
+    
+    summary["Cutsites"] += len(sites_cache)
+    sites_cache.clear()
+    
+    summary["Barcodes reads"] = len(barcode_nsites)
+
+    logger.info("Generating Barcode vs. Fragment matrix")
+    data = np.ones(len(indices))
+    matrix = scipy.sparse.csr_matrix((data, indices, indptr), dtype=int)
+    return matrix, index_barcode, barcode_nsites    
+
+
+def generate_frag_matrix(input: str, skip_contigs: Set[str], summary: Dict[str, int]):
     barcode_nfragments = Counter()
 
     # Containers for generating matrix
@@ -276,9 +384,21 @@ class Fragment:
         return (self.chromosome, self.start, self.end, self.barcode) == \
                (other.chromosome, other.start, other.end, other.barcode)
 
-    def __repr__(self):
+    def __str__(self):
         return f"{self.chromosome}\t{self.start}\t{self.end}\t{self.barcode}\t" \
                f"{self.count}"
+
+    def get_cutsites(self) -> Tuple['CutSite', 'CutSite']:
+        return CutSite(self.chromosome, self.start), CutSite(self.chromosome, self.end)
+
+
+@dataclasses.dataclass(frozen=True)
+class CutSite:
+    chromosome: str
+    position: int
+
+    def __lt__(self, other) -> bool:
+        return self.position < other.position
 
 
 class UnionFind:
