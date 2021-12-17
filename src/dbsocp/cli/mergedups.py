@@ -50,7 +50,7 @@ def add_arguments(parser):
     )
     parser.add_argument(
         "-t", "--threshold", type=float, default=0.5,
-        help="Jaccard index threshold value for merging barcodes. Default: %(default)s"
+        help="Jaccard index threshold in range 0->1 for merging barcodes. Default: %(default)s"
     )
     parser.add_argument(
         "-s", "--skip-contigs",
@@ -143,6 +143,9 @@ def run_mergedups(
 
     if plot_similarity is not None:
         import matplotlib.pyplot as plt
+
+        # Remove perfect matched barcodes
+        jaccard_similarity = jaccard_similarity[jaccard_similarity < 1.0]
         threshold_index = (np.abs(jaccard_similarity - threshold)).argmin()
         
         # Remove long tail
@@ -153,7 +156,6 @@ def run_mergedups(
         plt.axvline(threshold_index, 0, 1, color="r", alpha=0.8, label="Threshold")
         plt.xlabel("Barcode pair rank")
         plt.ylabel("Jaccard similarity")
-        plt.xscale("log")
         plt.legend(loc='upper right')
         plt.savefig(plot_similarity)
 
@@ -222,12 +224,10 @@ def generate_cutsite_matrix(input: str, skip_contigs: Set[str], summary: Dict[st
         cutsite1, cutsite2 = fragment.get_cutsites()
         summary["Fragments read"] += 1
         barcode = fragment.barcode
+        barcode_nsites[barcode] += 2
 
         if cutsite1.chromosome != prev_chromosome:
             for site, barcodes in sites_cache.items():
-                for barcode in barcodes:
-                    barcode_nsites[barcode] += 1
-                
                 if len(barcodes) < 2:
                     continue
             
@@ -247,9 +247,6 @@ def generate_cutsite_matrix(input: str, skip_contigs: Set[str], summary: Dict[st
                 summary["Cutsites"] += 1
                 barcodes = sites_cache.pop(site)
 
-                for barcode in barcodes:
-                    barcode_nsites[barcode] += 1
-                
                 if len(barcodes) < 2:
                     continue
                 
@@ -263,9 +260,6 @@ def generate_cutsite_matrix(input: str, skip_contigs: Set[str], summary: Dict[st
 
             
     for site, barcodes in sites_cache.items():
-        for barcode in barcodes:
-            barcode_nsites[barcode] += 1
-                
         if len(barcodes) < 2:
             continue
     
