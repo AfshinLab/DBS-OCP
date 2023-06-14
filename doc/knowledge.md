@@ -32,6 +32,7 @@
     (Techology paper)
 - [awesome-single-cell](https://github.com/seandavi/awesome-single-cell#epigenomics) 
     (Collection of software that contains some ATAC-seq tools)
+
 ### Tools
 - [Snaptools](https://github.com/r3fang/SnapTools) (Python packege for
  scATACseq processing, used with SnapATAC)
@@ -39,3 +40,6 @@
     (R package for analysis of SNAP files from Snaptools)
 - [ArchR](https://github.com/GreenleafLab/ArchR) (R package, 
     [website](https://www.archrproject.com/index.html))
+- [VSN-Pipelines/scATAC](https://vsn-pipelines.readthedocs.io/en/latest/scatac-seq.html)
+- [scATAC_snakemake](https://github.com/dbrg77/scATAC_snakemake) 
+    (Snakemake pipeline)
