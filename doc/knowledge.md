@@ -28,8 +28,7 @@
     (Analysis method comparison)
 - [Comprehensive analysis of single cell ATAC-seq data with SnapATAC](https://www.nature.com/articles/s41467-021-21583-9#Sec1)
     (Analysis method with high scaling capabilities)
-- [Droplet-based combinatorial indexing for massive-scale single-cell
- chromatin accessibility](https://www.nature.com/articles/s41587-019-0147-6#Sec9)
+- [Droplet-based combinatorial indexing for massive-scale single-cell chromatin accessibility](https://www.nature.com/articles/s41587-019-0147-6#Sec9)
     (Techology paper)
 - [awesome-single-cell](https://github.com/seandavi/awesome-single-cell#epigenomics) 
     (Collection of software that contains some ATAC-seq tools)
