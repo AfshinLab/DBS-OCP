@@ -1,7 +1,7 @@
 [![CI](https://github.com/AfshinLab/DBS-OCP/workflows/CI/badge.svg?branch=main)](https://github.com/AfshinLab/DBS-OCP/actions?query=branch%3Amain)
 
 # DBS-OCP
-DBS for Open Chromatin Profiling in single nucleii 
+DBS for Open Chromatin Profiling in single cells/nuclei, a.k.a scATAC-seq/snATAC-seq.
 
 - [Install](#install)
 - [Running analysis](#running-analysis)
@@ -52,3 +52,7 @@ Required inputs:
    To only run the preprocessing steps (barcode correction, read trimming
    , barcode assignment and QC) include the argument `preprocess`. 
 
+
+## Development
+
+Information about ATAC-seq analysis can be found in the [here](doc/knowledge.md).
