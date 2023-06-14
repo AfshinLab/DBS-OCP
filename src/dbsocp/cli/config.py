@@ -1,7 +1,7 @@
 """
 Update configuration file. If no --set option is given the current settings are printed.
 """
-from importlib_resources import path as resource_path
+from importlib_resources import files, as_file
 import logging
 from pathlib import Path
 from shutil import get_terminal_size
@@ -82,7 +82,7 @@ def change_config(filename: Path, changes_set: List[Tuple[str, str]]):
         item[keys[-1]] = value
 
     # Confirm that configs is valid.
-    with resource_path('dbsocp', SCHEMA_FILE) as schema_path:
+    with as_file(files('dbsocp') / SCHEMA_FILE) as schema_path:
         validate(configs, str(schema_path))
 
     # Write first to temporary file then overwrite filename.

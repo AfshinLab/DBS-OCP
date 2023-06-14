@@ -1,7 +1,7 @@
 """
 Create and initialize a new analysis directory.
 """
-from importlib_resources import read_binary
+from importlib_resources import files
 import logging
 import os
 import os.path
@@ -69,7 +69,8 @@ def create_and_populate_analysis_directory(directory: Path, reads1: Path, reads2
 
 def write_config_to_dir(file_name: str, directory: Path):
     # Write the configuration file
-    configuration = read_binary("dbsocp", file_name)
+    #configuration = read_binary("dbsocp", file_name)
+    configuration = (files('dbsocp') / file_name).read_bytes()
     with (directory / file_name).open("wb") as f:
         f.write(configuration)
 
