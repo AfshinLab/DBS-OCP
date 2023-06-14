@@ -111,7 +111,8 @@ def run_mergedups(
     # Remove coordinates that are covered by more than the MAX_BARCODES_PRECENTILE
     # percentile in number of barcodes
     bcs_per_coord = matrix.sum(axis=1)
-    max_bcs = int(max(np.percentile(bcs_per_coord, MAX_BARCODES_PRECENTILE), 2))
+    max_bcs = int(np.percentile(bcs_per_coord, MAX_BARCODES_PRECENTILE, axis=0))
+    max_bcs = max(max_bcs, 2)
     logger.info(f"Filtering coordinate with more than {max_bcs} barcodes.")
     matrix = matrix[np.ravel(bcs_per_coord) < max_bcs, :]
 
@@ -373,6 +374,7 @@ class Fragment:
     end: int
     barcode: str
     count: int
+    __slots__ = ["chromosome", "start", "end", "barcode", "count"]
 
     def update(self, other: 'Fragment'):
         self.count += other.count
@@ -397,6 +399,7 @@ class Fragment:
 class CutSite:
     chromosome: str
     position: int
+    __slots__ = ["chromosome", "position"]
 
     def __lt__(self, other) -> bool:
         return self.position < other.position
