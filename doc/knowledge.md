@@ -19,6 +19,7 @@
     (Snakemake pipeline)
 - [snakepipes](https://github.com/maxplanck-ie/snakepipes) (Snakemake
  pipeline collection which include ATAC seq workflow)
+- [Harvard FAS Informatics - ATAC-seq Guidelines](https://informatics.fas.harvard.edu/atac-seq-guidelines.html)
 
 ## Single-cell ATAC-seq
 
