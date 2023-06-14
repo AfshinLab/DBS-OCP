@@ -4,7 +4,10 @@ import sys
 from collections import Counter
 from functools import partial
 
+import dnaio
 from tqdm import tqdm as std_tqdm
+
+
 
 # Disable on non-TTY and use 1000 unit divisor
 tqdm = partial(std_tqdm, disable=None, unit_scale=True)
@@ -77,3 +80,8 @@ class Summary(Counter):
 
             print(f"{name:<{max_name_width}} {value_str}", file=print_to)
         print("="*width, file=print_to)
+
+
+def revcomp(sequence):
+    """Reverse complement a DNA sequence"""
+    return dnaio.Sequence("name", sequence).reverse_complement().sequence

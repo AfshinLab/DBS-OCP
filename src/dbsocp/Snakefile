@@ -3,6 +3,8 @@ from subprocess import CalledProcessError
 
 from snakemake.utils import validate
 
+from dbsocp.utils import revcomp
+
 configfile: "dbsocp.yaml"
 validate(config, "config.schema.yaml")
 
@@ -31,6 +33,10 @@ inputs_archr = [
     "fragments.merged.tsv.gz.tbi",
 ]
 
+if config["index"] is None:
+    include: "rules/trim_v1.smk"
+else:
+    include: "rules/trim_v2.smk"
 
 rule final:
     input: inputs_preprocess, inputs_align, inputs_snaptools, inputs_archr
@@ -56,34 +62,6 @@ rule preprocess:
     input: inputs_preprocess
 
 
-rule trim:
-    """Trim away 5' and possible 3' handles on read1 and trim possible 3' handles on 
-    read2."""
-    output:
-        interleaved_fastq=pipe("trimmed.fastq")
-    input:
-        r1_fastq="reads.1.fastq.gz",
-        r2_fastq="reads.2.fastq.gz",
-    log: "trimmed.fastq.log"
-    threads: workflow.cores - 1  # rule tag needs one thread
-    params:
-        five_prime = "XNNN" + config["h1"] + "N"*len(config["barcode"]) + config["h2"],
-        trim_len = sum([len(config["h1"]), len(config["barcode"]), len(config["h2"])])
-    shell:
-        "cutadapt"
-        " -g '{params.five_prime};min_overlap={params.trim_len}...{config[h3]};optional'"
-        " -A {config[h3]}"
-        " --pair-filter 'any'"
-        " -e 0.2"
-        " -j {threads}"
-        " -m 25"
-        " --interleaved"
-        " -o {output.interleaved_fastq}"
-        " {input.r1_fastq}"
-        " {input.r2_fastq}"
-        " > {log}"
-
-
 rule tag:
     """Tag reads with uncorrected and corrected barcode."""
     output:
@@ -95,42 +73,19 @@ rule tag:
         corrected_barcodes="barcodes.clstr.gz"
     log: "trimmed.barcoded.1.fastq.gz.log"
     threads: 1
+    params: 
+        barcode_pattern = config["barcode"] if config["index"] is not None else revcomp(config["barcode"]),
+        min_count = config["min_count"]
     shell:
         "dbsocp tagfastq"
         " --o1 {output.r1_fastq}"
         " --o2 {output.r2_fastq}"
-        " --min-count {config[min_count]}"
-        " --pattern-match {config[barcode]}"
+        " --min-count {params.min_count}"
+        " --pattern-match {params.barcode_pattern}"
         " {input.uncorrected_barcodes}"
         " {input.corrected_barcodes}"
         " {input.interleaved_fastq}"
         " 2> {log}"
-
-
-rule extract_DBS:
-    """Extract barcode sequence from read1 FASTQ"""
-    output:
-        fastq="barcodes.fastq.gz"
-    input:
-         fastq="reads.1.fastq.gz"
-    log: "barcodes.fastq.gz.log"
-    threads: 20
-    params:
-        extract_len = len(config["h1"]),
-        dbs_len_max = len(config["barcode"]) + 1,
-        dbs_len_min = len(config["barcode"]) - 1
-    shell:
-        "cutadapt"
-        " -g 'XNNN{config[h1]};min_overlap={params.extract_len}...{config[h2]}'"
-        " -e 0.2"
-        " --discard-untrimmed"
-        " -j {threads}"
-        " -m {params.dbs_len_min}"
-        " -M {params.dbs_len_max}"
-        " --max-n 0"
-        " -o {output.fastq}"
-        " {input.fastq}"
-        " > {log}"
 
 
 rule starcode_clustering:
@@ -141,12 +96,15 @@ rule starcode_clustering:
         "barcodes.fastq.gz"
     threads: 20
     log: "barcodes.clstr.gz.log"
+    params:
+        barcode_max_dist = config["barcode_max_dist"],
+        barcode_ratio = config["barcode_ratio"]
     shell:
         "pigz -cd {input} |"
         " starcode"
         " -t {threads}"
-        " -d {config[barcode_max_dist]}"
-        " -r {config[barcode_ratio]}"
+        " -d {params.barcode_max_dist}"
+        " -r {params.barcode_ratio}"
         " --print-clusters"
         " 2> {log}"
         " | pigz -9 > {output}"
@@ -177,13 +135,14 @@ rule map:
         sort = "mapped.bam.sort.log"
     threads: 20
     params:
-        tmpdir = "-T $TMPDIR" if "TMPDIR" in os.environ else ""
+        tmpdir = "-T $TMPDIR" if "TMPDIR" in os.environ else "",
+        reference = config["reference"]
     shell:
         "bwa mem"
         " -t {threads}"
         " -C"
         " -M"
-        " {config[reference]}"
+        " {params.reference}"
         " {input.fastq1}"
         " {input.fastq2}"
         " 2> {log.map}"
@@ -237,13 +196,16 @@ rule snaptools_pre:
         bam = "mapped.nsort.bam"
     log: "mapped.snap.log"
     threads: 20
+    params:
+        reference_name = config["reference_name"],
+        fai = config["reference"] + ".fai"
     shell:
         "snaptools snap-pre"
         " --input-file={input.bam}"
         " --output-snap={output.snap}"
-        " --genome-name={config[reference_name]}"
+        " --genome-name={params.reference_name}"
         # For genome-size -> file with chromosome name and length on 1st and 2nd column
-        " --genome-size={config[reference]}.fai" 
+        " --genome-size={params.fai}" 
         " --min-mapq=30"
         " --min-flen=0"
         " --max-flen=1000"
@@ -266,6 +228,8 @@ rule snaptools_add_bmat:
         snap = "mapped.snap"
     log: "mapped.snap.add_bmat.log"
     threads: 20
+    params:
+        bin_sizes = config["bin_sizes"]
     shell:
         # Rule cannot be rerun without frist deleting current session.
         # Try deleting first and then generate bmat.
@@ -275,7 +239,7 @@ rule snaptools_add_bmat:
         " || true;"
         " snaptools snap-add-bmat"
         " --snap-file={input.snap}"
-        " --bin-size-list {config[bin_sizes]}"
+        " --bin-size-list {params.bin_sizes}"
         " --verbose=True > {log}"
         " &&"
         " touch {output}"
@@ -283,7 +247,7 @@ rule snaptools_add_bmat:
 
 rule getfrags:
     output:
-        frags = pipe("fragments.tsv")
+        frags = "fragments.tsv"
     input:
         bam = "mapped.bam",
         bai = "mapped.bam.bai"
@@ -297,7 +261,7 @@ rule getfrags:
 
 rule mergedups:
     output:
-        frags = pipe("fragments.merged.tsv"),
+        frags = "fragments.merged.tsv",
         merges = "barcode_merges.tsv"
     input:
         frags = "fragments.tsv.gz",

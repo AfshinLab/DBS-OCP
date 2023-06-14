@@ -1,12 +1,27 @@
 # -- PREPROCESSING --
-# Handles follows read1 structure: <h1><barcode><h2><genomic insert><h3>
+# Handles follows structure depending on protocol version
+#
+# Version 1
+#    5'-<h1><barcode><h2><genomic insert><h3>-3'
+#    R1 |----------------------->
+#    R2        <------------------------|       
+#
+# Version 2:
+#    5'-<h1><barcode><h2><x><genomic insert><h3>-3'
+#    R1                     |--------------->
+#    R2                    <---------------|       
+#    I2   <-------------|
+#
+# x: is a sequencing primer handle that cotains the revcomp of h3 on the 3' end
+
 h1: CAGTTGATCATCAGCAGGTAATCTGG
 h2: CATGACCTCTTGGAACTGTCAGATGTGTATAAGAGACAG
 h3: CTGTCTCTTATACACATCT
 barcode: BDHVBDHVBDHVBDHVBDHV
+index:  # Path to index 2 FASTQ file containing the barcode in V2 setup
 
 # Starcode clustering parameters
-barcode_max_dist: 2
+barcode_max_dist: 1
 barcode_ratio: 5
 
 min_count: 2 # Minimum number of reads to include barcode in alignment

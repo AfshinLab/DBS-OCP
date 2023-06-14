@@ -9,8 +9,11 @@ from dbsocp.cli.config import change_config
 from dbsocp.cli.run import run, SnakemakeError
 
 TESTDATA = Path("tests/testdata")
-TESTDATA_READ1 = TESTDATA / "reads.1.fastq.gz"
-TESTDATA_READ2 = TESTDATA / "reads.2.fastq.gz"
+TESTDATA_READ1_V1 = TESTDATA / "reads.1.fastq.gz"
+TESTDATA_READ2_V1 = TESTDATA / "reads.2.fastq.gz"
+TESTDATA_READ1_V2 = TESTDATA / "reads_v2.1.fastq.gz"
+TESTDATA_READ2_V2 = TESTDATA / "reads_v2.2.fastq.gz"
+TESTDATA_INDEX_V2 = (TESTDATA / "index_v2.fastq.gz").absolute()
 TESTDATA_REFERENCE = (TESTDATA / "ref.fasta").absolute()
 CONFIG_NAME = "dbsocp.yaml"
 
@@ -41,35 +44,71 @@ def test_environment():
 
 
 def test_init(tmp_path):
-    init(tmp_path / "analysis", TESTDATA_READ1)
+    init(tmp_path / "analysis", TESTDATA_READ1_V1)
 
 
 def test_config(tmp_path):
     workdir = tmp_path / "analysis"
-    init(workdir, TESTDATA_READ1)
+    init(workdir, TESTDATA_READ1_V1)
     change_config(workdir / CONFIG_NAME, [("reference", str(TESTDATA_REFERENCE))])
 
 
 @pytest.fixture(scope="module")
-def _workdir(tmp_path_factory):
+def _workdir_v1(tmp_path_factory):
     """
     This runs the pipeline using default parameters
     """
     path = tmp_path_factory.mktemp(basename="analysis-") / "analysis"
-    init(path, TESTDATA_READ1)
+    init(path, TESTDATA_READ1_V1)
     change_config(path / CONFIG_NAME, [("reference", str(TESTDATA_REFERENCE))])
     try:
-        run(workdir=path, keepgoing=True)
-    except SnakemakeError:
-        pass
+        run(cores=1, workdir=path, snakemake_args=["--cores", "1", "--keep-going"])
+    except subprocess.CalledProcessError as e:
+        print_all_logs(path)
     return path
 
 
 @pytest.fixture
-def workdir(_workdir, tmp_path):
+def workdir_v1(_workdir_v1, tmp_path):
     """Make a fresh copy of the prepared analysis directory"""
     path = tmp_path / "analysis"
-    shutil.copytree(_workdir, path)
+    shutil.copytree(_workdir_v1, path)
+    return path
+
+
+@pytest.fixture(scope="module")
+def _workdir_v2(tmp_path_factory):
+    """
+    This runs the pipeline using default parameters
+    """
+    path = tmp_path_factory.mktemp(basename="analysis-") / "analysis"
+    init(path, TESTDATA_READ1_V2)
+    change_config(
+        path / CONFIG_NAME, 
+        [("reference", str(TESTDATA_REFERENCE)), 
+        ("index", str(TESTDATA_INDEX_V2)),
+        ("h2", "CATGACCTCTTGGAACTGTC")]
+    )
+    try:
+        run(cores=1, workdir=path, snakemake_args=["--cores", "1", "--keep-going"])
+    except subprocess.CalledProcessError as e:
+        print_all_logs(path)
+    return path
+
+
+@pytest.fixture
+def workdir_v1(_workdir_v1, tmp_path):
+    """Make a fresh copy of the prepared analysis directory"""
+    path = tmp_path / "analysis"
+    shutil.copytree(_workdir_v1, path)
+    return path
+
+
+@pytest.fixture
+def workdir_v2(_workdir_v2, tmp_path):
+    """Make a fresh copy of the prepared analysis directory"""
+    path = tmp_path / "analysis"
+    shutil.copytree(_workdir_v2, path)
     return path
 
 
@@ -95,9 +134,18 @@ expected_files = [
 
 
 @pytest.mark.parametrize("file", expected_files)
-def test_run_creates(workdir, file):
+def test_run_creates_v1(workdir_v1, file):
     """Check that all expected files are created"""
-    if not (workdir / file).exists():
+    if not (workdir_v1 / file).exists():
         print(f"File {file} not found! See logs below:")
-        print_all_logs(workdir)
+        print_all_logs(workdir_v1)
+        raise AssertionError
+
+
+@pytest.mark.parametrize("file", expected_files)
+def test_run_creates_v2(workdir_v2, file):
+    """Check that all expected files are created"""
+    if not (workdir_v2 / file).exists():
+        print(f"File {file} not found! See logs below:")
+        print_all_logs(workdir_v2)
         raise AssertionError

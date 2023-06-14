@@ -172,14 +172,14 @@ def add_barcode_to_reads(reader, writer, barcode_reader, corrected_barcodes, sum
         summary["Read pairs read"] += 1
 
         # Get corrected barcode if exists
-        uncorrected_barcode_seq = barcode_reader.get_barcode(read1.name)
+        name = read1.name.split(maxsplit=1)[0]
+        uncorrected_barcode_seq = barcode_reader.get_barcode(name)
         corrected_barcode_seq = corrected_barcodes.get(uncorrected_barcode_seq)
 
         if corrected_barcode_seq is not None:
             # Update read names with barcode info
-            name = read1.name.split(maxsplit=1)[0]
-            read1.name = f"{corrected_barcode_seq}:{name}\tCB:Z:{corrected_barcode_seq}"
-            read2.name = f"{corrected_barcode_seq}:{name}\tCB:Z:{corrected_barcode_seq}"
+            read1.name = f"{name}\tCB:Z:{corrected_barcode_seq}"
+            read2.name = read1.name
         else:
             summary["Reads missing barcode"] += 1
             continue
@@ -240,7 +240,7 @@ class BarcodeReader:
 
     def parse(self):
         for barcode in self._file:
-            yield barcode.name, barcode.sequence
+            yield barcode.name.split(" ")[0], barcode.sequence
 
     def get_barcode(self, read_name, maxiter=10):
         if read_name in self._cache:
