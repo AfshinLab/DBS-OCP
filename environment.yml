@@ -8,7 +8,7 @@ channels:
 dependencies:
   - conda-forge::importlib_resources # Remove when minimum Python verion is 3.9
   - conda-forge::pip
-  - conda-forge::python>=3.8
+  - conda-forge::python=3.8
   - conda-forge::python-isal>0.8.0 # See https://github.com/marcelm/cutadapt/issues/520
   - conda-forge::ruamel.yaml
   - conda-forge::scipy
