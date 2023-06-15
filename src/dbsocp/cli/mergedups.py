@@ -1,19 +1,16 @@
 """
 Find barcodes and merge originating from the same droplet/compartment.
 """
-
 from collections import OrderedDict, defaultdict, Counter
+import dataclasses
 import logging
 from typing import Dict, Set, Tuple
-
-import dataclasses
 
 from xopen import xopen
 import numpy as np
 import scipy
 import scipy.stats
 import scipy.sparse
-
 
 from dbsocp.utils import Summary, tqdm
 
@@ -188,6 +185,14 @@ def run_mergedups(
                         print(barcode, uf[barcode], sep="\t", file=outfile)
 
     logger.info(f"Writing updated fragments to {output}.")
+    write_merged_fragments(input, output, uf, summary)
+
+    logger.info("Finished")
+    summary.print_stats(name=__name__)
+
+
+def write_merged_fragments(input: str, output: str, uf: "UnionFind", summary: Dict[str, int]):
+    """Write merged fragments to file."""
     with open(output, "w") as outfile:
         parser = parse_fragment_file(input)
         prev_fragment = next(parser)
@@ -203,9 +208,6 @@ def run_mergedups(
 
         summary["Fragments written"] += 1
         print(prev_fragment, file=outfile)
-
-    logger.info("Finished")
-    summary.print_stats(name=__name__)
 
 
 def generate_cutsite_matrix(file: str, skip_contigs: Set[str], summary: Dict[str, int]):
