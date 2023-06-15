@@ -10,39 +10,43 @@ on:
     paths-ignore:
       - 'doc/**'
       - 'README.md'
+
 jobs:
-  run:
-    name: Run pipeline
+  Linting:
+    - uses: actions/checkout@v3
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.8
+        architecture: x64
+    - name: Install flake8
+      run:
+        pip install flake8 black
+    - name: Run black check
+      run: |
+        black --check src/ tests/
+    - name: Run flake8
+      run: |
+        flake8 src/ tests/
+        flake8 --select=W292 --filename '*.yaml,*.yml'
+      
+  Run pipeline:
+    needs: Linting
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: 3.8
-          mamba-version: "*"
-          channels: conda-forge,bioconda,defaults
-          channel-priority: true
-          activate-environment: testenv
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
           environment-file: environment.yml
+      - name: Install pytest
+        run: |
+          mamba install pytest
       - name: Install package
         run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate testenv
-          pip install .[dev]
-      - name: Run black check
-        run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate testenv
-          black --check src/ tests/
-      - name: Run flake8
-        run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate testenv
-          flake8 src/ tests/
-          flake8 --select=W292 --filename '*.yaml,*.yml'
+          pip install .
       - name: Run tests
         run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate testenv
           pytest -v tests/
