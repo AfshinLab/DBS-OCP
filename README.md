@@ -5,6 +5,7 @@ DBS for Open Chromatin Profiling in single cells/nuclei, a.k.a scATAC-seq/snATAC
 
 - [Install](#install)
 - [Running analysis](#running-analysis)
+- [Development](#development)
 
 ## Install
 
