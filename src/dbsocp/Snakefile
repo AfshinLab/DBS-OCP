@@ -245,23 +245,32 @@ rule snaptools_add_bmat:
         " touch {output}"
 
 
-rule getfrags:
+rule get_fragments:
+    """Convert BAM to fragment file using sinto"""
     output:
-        frags = "fragments.tsv"
+        frags = temp("fragments.tsv")
     input:
         bam = "mapped.bam",
         bai = "mapped.bam.bai"
     log: "fragments.tsv.log"
+    theads: 20
+    params:
+        min_mapq = 30,
+        barcode_tag = "CB",
     shell:
-        "dbsocp getfrags"
-        " -o {output.frags}"
-        " {input.bam}"
+        "sinto fragments"
+        " -b {input.bam}"
+        " -f {output.frags}"
+        " --min-mapq {params.min_mapq}"
+        " --barcodetag {params.barcode_tag}"
+        " --collapse_within" # Collapses overlapping fragments within the same barcode
+        " --nproc {threads}"
         " 2> {log}"
 
 
 rule mergedups:
     output:
-        frags = "fragments.merged.tsv",
+        frags = temp("fragments.merged.tsv"),
         merges = "barcode_merges.tsv"
     input:
         frags = "fragments.tsv.gz",
@@ -276,14 +285,14 @@ rule mergedups:
         " 2> {log}"
 
 
-rule index_frags:
+rule sort_and_index_frags:
     output:
         frags = "{base}.tsv.gz",
         tbi = "{base}.tsv.gz.tbi"
     input:
         frags = "{base}.tsv"
     shell:
-        "bgzip -c {input.frags} > {output.frags} && tabix -p bed {output.frags}"
+        "sort -k 1,1 -k2,2n {input.frags} | bgzip -c  > {output.frags} && tabix -p bed {output.frags}"
 
 
 rule preseq_c_curve:

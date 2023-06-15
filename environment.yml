@@ -20,6 +20,7 @@ dependencies:
   - bioconda::multiqc
   - bioconda::preseq
   - bioconda::samtools>=1.17
+  - bioconda::sinto=0.9.0
   - bioconda::snakemake-minimal>=7.28.1
   - bioconda::starcode=1.4
   - pip:
