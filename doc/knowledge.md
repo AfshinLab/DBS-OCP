@@ -43,3 +43,4 @@
 - [VSN-Pipelines/scATAC](https://vsn-pipelines.readthedocs.io/en/latest/scatac-seq.html)
 - [scATAC_snakemake](https://github.com/dbrg77/scATAC_snakemake) 
     (Snakemake pipeline)
+- [sinto pipeline](https://timoast.github.io/sinto/scatac.html)
