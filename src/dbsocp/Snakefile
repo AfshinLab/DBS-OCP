@@ -253,7 +253,7 @@ rule get_fragments:
         bam = "mapped.bam",
         bai = "mapped.bam.bai"
     log: "fragments.tsv.log"
-    theads: 20
+    threads: 20
     params:
         min_mapq = 30,
         barcode_tag = "CB",
@@ -261,7 +261,7 @@ rule get_fragments:
         "sinto fragments"
         " -b {input.bam}"
         " -f {output.frags}"
-        " --min-mapq {params.min_mapq}"
+        " --min_mapq {params.min_mapq}"
         " --barcodetag {params.barcode_tag}"
         " --collapse_within" # Collapses overlapping fragments within the same barcode
         " --nproc {threads}"
@@ -271,7 +271,8 @@ rule get_fragments:
 rule mergedups:
     output:
         frags = temp("fragments.merged.tsv"),
-        merges = "barcode_merges.tsv"
+        merges = "fragments.barcode_merges.tsv",
+        plot = "fragments.barcode_merges.png"
     input:
         frags = "fragments.tsv.gz",
         index = "fragments.tsv.gz.tbi"
@@ -280,6 +281,7 @@ rule mergedups:
         "dbsocp mergedups"
         " -o {output.frags}"
         " -m {output.merges}"
+        " --plot-similarity {output.plot}"
         " --threshold 0.2"
         " {input.frags}"
         " 2> {log}"
@@ -292,7 +294,11 @@ rule sort_and_index_frags:
     input:
         frags = "{base}.tsv"
     shell:
-        "sort -k 1,1 -k2,2n {input.frags} | bgzip -c  > {output.frags} && tabix -p bed {output.frags}"
+        "sort -k 1,1 -k2,2n {input.frags}"
+        " | "
+        "bgzip -c  > {output.frags}"
+        " && "
+        "tabix -p bed {output.frags}"
 
 
 rule preseq_c_curve:
