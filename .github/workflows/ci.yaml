@@ -32,7 +32,8 @@ jobs:
           flake8 src/ tests/
           flake8 --select=W292 --filename '*.yaml,*.yml'
       
-  Run pipeline:
+  run:
+    name: Run pipeline
     needs: Linting
     timeout-minutes: 5
     runs-on: ubuntu-latest
