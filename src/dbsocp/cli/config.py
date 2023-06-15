@@ -22,13 +22,20 @@ SCHEMA_FILE = "config.schema.yaml"
 
 def add_arguments(parser):
     parser.add_argument(
-        "-s", "--set", nargs=2, metavar=("KEY", "VALUE"), action="append",
+        "-s",
+        "--set",
+        nargs=2,
+        metavar=("KEY", "VALUE"),
+        action="append",
         help="Set KEY to VALUE. Use KEY.SUBKEY[.SUBSUBKEY...] for nested keys. "
-             "For empty values write 'null'. Can be given multiple times."
+        "For empty values write 'null'. Can be given multiple times.",
     )
     parser.add_argument(
-        "-f", "--file", default=DEFAULT_PATH, type=Path,
-        help="Configuration file to modify. Default: %(default)s in current directory."
+        "-f",
+        "--file",
+        default=DEFAULT_PATH,
+        type=Path,
+        help="Configuration file to modify. Default: %(default)s in current directory.",
     )
 
 
@@ -71,18 +78,18 @@ def change_config(filename: Path, changes_set: List[Tuple[str, str]]):
     for key, value in changes_set:
         # Convert relative paths to absolute
         value = make_paths_absolute(value, workdir=filename.parent)
-        value = YAML(typ='safe').load(value)
+        value = YAML(typ="safe").load(value)
         logger.info(f"Changing value of '{key}': {configs[key]} --> {value}.")
         item = configs
 
         # allow nested keys
-        keys = key.split('.')
+        keys = key.split(".")
         for i in keys[:-1]:
             item = item[i]
         item[keys[-1]] = value
 
     # Confirm that configs is valid.
-    with as_file(files('dbsocp') / SCHEMA_FILE) as schema_path:
+    with as_file(files("dbsocp") / SCHEMA_FILE) as schema_path:
         validate(configs, str(schema_path))
 
     # Write first to temporary file then overwrite filename.

@@ -44,52 +44,57 @@ IUPAC = {
     "B": "CGT",
     "V": "ACG",
     "D": "AGT",
-    "N": "ACGT"
+    "N": "ACGT",
 }
 
 
 def add_arguments(parser):
     parser.add_argument(
-        "uncorrected_barcodes",
-        help="FASTQ/FASTA for uncorrected barcodes."
+        "uncorrected_barcodes", help="FASTQ/FASTA for uncorrected barcodes."
     )
     parser.add_argument(
         "corrected_barcodes",
         help="File for error corrected barcodes. Each line is tab delimited with the "
-             "entries: (1) Corrected barcode, (2) Total read count, (3) Comma "
-             "delimited barcode sequences corrected to (1)."
+        "entries: (1) Corrected barcode, (2) Total read count, (3) Comma "
+        "delimited barcode sequences corrected to (1).",
     )
     parser.add_argument(
         "input1",
         help="Input FASTQ/FASTA file. Assumes to contain read1 if given with second "
-             "input file. If only input1 is given, input is assumed to be an "
-             "interleaved. If reading from stdin is requested use '-' as a "
-             "placeholder."
+        "input file. If only input1 is given, input is assumed to be an "
+        "interleaved. If reading from stdin is requested use '-' as a "
+        "placeholder.",
     )
     parser.add_argument(
-        "input2", nargs='?',
+        "input2",
+        nargs="?",
         help="Input FASTQ/FASTA for read2 for paired-end read. Leave empty if using "
-             "interleaved."
+        "interleaved.",
     )
     parser.add_argument(
-        "--output1", "--o1",
+        "--output1",
+        "--o1",
         help="Output FASTQ/FASTA file name for read1. If not specified the result is "
-             "written to stdout as interleaved. If output1 given but not output2, "
-             "output will be written as interleaved to output1."
+        "written to stdout as interleaved. If output1 given but not output2, "
+        "output will be written as interleaved to output1.",
     )
     parser.add_argument(
-        "--output2", "--o2",
+        "--output2",
+        "--o2",
         help="Output FASTQ/FASTA name for read2. If not specified but --o1/--output1 "
-             "given the result is written as interleaved."
+        "given the result is written as interleaved.",
     )
     parser.add_argument(
-        "--min-count", default=2, type=int,
-        help="Minimum read count for barcode to be included in output."
+        "--min-count",
+        default=2,
+        type=int,
+        help="Minimum read count for barcode to be included in output.",
     )
     parser.add_argument(
-        "-p", "--pattern-match",
+        "-p",
+        "--pattern-match",
         help="IUPAC barcode string to match against corrected barcodes. Non-matched "
-             "barcodes will be removed."
+        "barcodes will be removed.",
     )
 
 
@@ -107,14 +112,14 @@ def main(args):
 
 
 def run_tagfastq(
-        uncorrected_barcodes: str,
-        corrected_barcodes: str,
-        input1: str,
-        input2: str,
-        output1: str,
-        output2: str,
-        min_count: int,
-        pattern_match: str,
+    uncorrected_barcodes: str,
+    corrected_barcodes: str,
+    input1: str,
+    input2: str,
+    output1: str,
+    output2: str,
+    min_count: int,
+    pattern_match: str,
 ):
     logger.info("Starting")
     summary = Summary()
@@ -122,8 +127,9 @@ def run_tagfastq(
     # its canonical sequence.
     template = [set(IUPAC[base]) for base in pattern_match] if pattern_match else []
     with xopen(corrected_barcodes, "r") as reader:
-        corrected_barcodes = parse_corrected_barcodes(reader, summary, template,
-                                                      min_count)
+        corrected_barcodes = parse_corrected_barcodes(
+            reader, summary, template, min_count
+        )
 
     in_interleaved = not input2
     logger.info(f"Input is {'interleaved' if in_interleaved else 'paired'} FASTQ.")
@@ -149,8 +155,9 @@ def run_tagfastq(
             BarcodeReader(uncorrected_barcodes)
         )
 
-        add_barcode_to_reads(reader, writer, uncorrected_barcode_reader,
-                             corrected_barcodes, summary)
+        add_barcode_to_reads(
+            reader, writer, uncorrected_barcode_reader, corrected_barcodes, summary
+        )
 
     summary.print_stats(__name__)
 

@@ -19,14 +19,14 @@ MULTIQC_CONFIG_FILE_NAME = "multiqc_config.yaml"
 
 def add_arguments(parser):
     parser.add_argument(
-        "--reads1", "--r1", type=Path, metavar="READS",
+        "--reads1",
+        "--r1",
+        type=Path,
+        metavar="READS",
         help="First paired-end read file (.fastq.gz). The second is found "
-             "automatically.",
+        "automatically.",
     )
-    parser.add_argument(
-        "directory", type=Path,
-        help="New analysis directory to create"
-    )
+    parser.add_argument("directory", type=Path, help="New analysis directory to create")
 
 
 def main(args):
@@ -69,8 +69,7 @@ def create_and_populate_analysis_directory(directory: Path, reads1: Path, reads2
 
 def write_config_to_dir(file_name: str, directory: Path):
     # Write the configuration file
-    #configuration = read_binary("dbsocp", file_name)
-    configuration = (files('dbsocp') / file_name).read_bytes()
+    configuration = (files("dbsocp") / file_name).read_bytes()
     with (directory / file_name).open("wb") as f:
         f.write(configuration)
 

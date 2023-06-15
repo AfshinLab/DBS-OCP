@@ -30,36 +30,43 @@ MAX_BARCODES_PRECENTILE = 99
 
 
 def add_arguments(parser):
+    parser.add_argument("input", help="Coordinate-sorted Fragment file.")
     parser.add_argument(
-        "input",
-        help="Coordinate-sorted Fragment file."
+        "-o",
+        "--output",
+        required=True,
+        help="Output Fragment file with merged barcode duplicates.",
     )
     parser.add_argument(
-        "-o", "--output", required=True,
-        help="Output Fragment file with merged barcode duplicates."
-    )
-    parser.add_argument(
-        "-m", "--merges",
+        "-m",
+        "--merges",
         help="Output TSV with barcodes that were merged in form: <old_barcode> "
-             "<new_barcode>"
+        "<new_barcode>",
     )
     parser.add_argument(
-        "-p", "--plot-similarity",
+        "-p",
+        "--plot-similarity",
         help="Output plot of ranked jaccard similarity for overlapping barcode pairs "
-             "to file"
+        "to file",
     )
     parser.add_argument(
-        "-t", "--threshold", type=float, default=0.5,
+        "-t",
+        "--threshold",
+        type=float,
+        default=0.5,
         help="Jaccard index threshold in range 0->1 for merging barcodes. "
-             "Default: %(default)s"
+        "Default: %(default)s",
     )
     parser.add_argument(
-        "-s", "--skip-contigs",
-        help="Comma separated list of contings to skip for merging"
+        "-s",
+        "--skip-contigs",
+        help="Comma separated list of contings to skip for merging",
     )
     parser.add_argument(
-        "--mode", choices=["fragment", "cutsite"], default="fragment",
-        help="Compare overlaps based on 'fragment' (default) or 'cutsite'."
+        "--mode",
+        choices=["fragment", "cutsite"],
+        default="fragment",
+        help="Compare overlaps based on 'fragment' (default) or 'cutsite'.",
     )
 
 
@@ -77,13 +84,13 @@ def main(args):
 
 
 def run_mergedups(
-        input: str,
-        output: str,
-        merges: str,
-        plot_similarity: str,
-        threshold: float,
-        skip_contigs: Set[str],
-        mode: str,
+    input: str,
+    output: str,
+    merges: str,
+    plot_similarity: str,
+    threshold: float,
+    skip_contigs: Set[str],
+    mode: str,
 ):
     logger.info("Starting Analysis")
     summary = Summary()
@@ -98,13 +105,13 @@ def run_mergedups(
     #               coord4  |   1   1   ... 0   |
     #                       --------------------
     if mode == "fragment":
-        matrix, index_barcode, barcode_counts = generate_frag_matrix(input,
-                                                                     skip_contigs,
-                                                                     summary)
+        matrix, index_barcode, barcode_counts = generate_frag_matrix(
+            input, skip_contigs, summary
+        )
     elif mode == "cutsite":
-        matrix, index_barcode, barcode_counts = generate_cutsite_matrix(input,
-                                                                        skip_contigs,
-                                                                        summary)
+        matrix, index_barcode, barcode_counts = generate_cutsite_matrix(
+            input, skip_contigs, summary
+        )
     else:
         raise ValueError(f"Unknown mode '{mode}'.")
 
@@ -127,7 +134,7 @@ def run_mergedups(
     #               ...     |   .   .   ... .   |
     #               BcN     |   0   1   ... 2   |
     #                        --------------------
-    overlapps = (matrix.transpose() * matrix)
+    overlapps = matrix.transpose() * matrix
 
     # Only consider barcodes with more than the minimun required overlapping position.
     overlapping_bcs = overlapps > MIN_OVERLAPS
@@ -144,9 +151,15 @@ def run_mergedups(
 
     summary["Overlapping Barcodes"] = len(nr_overlapps)
 
-    uf, jaccard_similarity = call_duplicates(nr_overlapps, bcs_rows, bcs_cols,
-                                             index_barcode, barcode_counts,
-                                             threshold, summary)
+    uf, jaccard_similarity = call_duplicates(
+        nr_overlapps,
+        bcs_rows,
+        bcs_cols,
+        index_barcode,
+        barcode_counts,
+        threshold,
+        summary,
+    )
 
     if plot_similarity is not None:
         import matplotlib.pyplot as plt
@@ -163,7 +176,7 @@ def run_mergedups(
         plt.axvline(threshold_index, 0, 1, color="r", alpha=0.8, label="Threshold")
         plt.xlabel("Barcode pair rank")
         plt.ylabel("Jaccard similarity")
-        plt.legend(loc='upper right')
+        plt.legend(loc="upper right")
         plt.savefig(plot_similarity)
 
     if merges is not None:
@@ -239,8 +252,9 @@ def generate_cutsite_matrix(file: str, skip_contigs: Set[str], summary: Dict[str
                     continue
 
                 summary["Cutsites duplicate"] += 1
-                update_matrix_data(barcodes, barcode_index, index_barcode, indices,
-                                   indptr)
+                update_matrix_data(
+                    barcodes, barcode_index, index_barcode, indices, indptr
+                )
 
             summary["Cutsites"] += len(sites_cache)
             sites_cache.clear()
@@ -259,8 +273,9 @@ def generate_cutsite_matrix(file: str, skip_contigs: Set[str], summary: Dict[str
                     continue
 
                 summary["Cutsites duplicate"] += 1
-                update_matrix_data(barcodes, barcode_index, index_barcode, indices,
-                                   indptr)
+                update_matrix_data(
+                    barcodes, barcode_index, index_barcode, indices, indptr
+                )
 
             next_checkpoint = cutsite1.position + DOUBLE_BUFFER
 
@@ -313,8 +328,9 @@ def generate_frag_matrix(file: str, skip_contigs: Set[str], summary: Dict[str, i
 
         if prev_dup:
             summary["Fragments duplicate"] += 1
-            update_matrix_data(prev_barcodes, barcode_index, index_barcode, indices,
-                               indptr)
+            update_matrix_data(
+                prev_barcodes, barcode_index, index_barcode, indices, indptr
+            )
             prev_dup = False
 
         prev_fragment = fragment
@@ -332,14 +348,16 @@ def generate_frag_matrix(file: str, skip_contigs: Set[str], summary: Dict[str, i
     return matrix, index_barcode, barcode_counts
 
 
-def call_duplicates(nr_overlapps, bcs_rows, bcs_cols, index_barcode,
-                    barcode_counts, threshold, summary) -> 'UnionFind':
+def call_duplicates(
+    nr_overlapps, bcs_rows, bcs_cols, index_barcode, barcode_counts, threshold, summary
+) -> "UnionFind":
     """Iterate over overlapping positions and generate duplicate calls which are used
-     create a UnionFind object"""
+    create a UnionFind object"""
     uf = UnionFind()
     jaccard_similarity = []
-    for nr_shared, i1, i2 in tqdm(zip(nr_overlapps, bcs_rows, bcs_cols),
-                                  desc="Find overlaps", total=len(bcs_rows)):
+    for nr_shared, i1, i2 in tqdm(
+        zip(nr_overlapps, bcs_rows, bcs_cols), desc="Find overlaps", total=len(bcs_rows)
+    ):
         bc1 = index_barcode[i1]
         bc2 = index_barcode[i2]
         total = barcode_counts[bc1] + barcode_counts[bc2] - nr_shared
@@ -376,22 +394,31 @@ class Fragment:
     count: int
     __slots__ = ["chromosome", "start", "end", "barcode", "count"]
 
-    def update(self, other: 'Fragment'):
+    def update(self, other: "Fragment"):
         self.count += other.count
 
     def match_coordinates(self, other):
-        return (self.chromosome, self.start, self.end) == \
-               (other.chromosome, other.start, other.end)
+        return (self.chromosome, self.start, self.end) == (
+            other.chromosome,
+            other.start,
+            other.end,
+        )
 
     def __eq__(self, other) -> bool:
-        return (self.chromosome, self.start, self.end, self.barcode) == \
-               (other.chromosome, other.start, other.end, other.barcode)
+        return (self.chromosome, self.start, self.end, self.barcode) == (
+            other.chromosome,
+            other.start,
+            other.end,
+            other.barcode,
+        )
 
     def __str__(self):
-        return f"{self.chromosome}\t{self.start}\t{self.end}\t{self.barcode}\t" \
-               f"{self.count}"
+        return (
+            f"{self.chromosome}\t{self.start}\t{self.end}\t{self.barcode}\t"
+            f"{self.count}"
+        )
 
-    def get_cutsites(self) -> Tuple['CutSite', 'CutSite']:
+    def get_cutsites(self) -> Tuple["CutSite", "CutSite"]:
         return CutSite(self.chromosome, self.start), CutSite(self.chromosome, self.end)
 
 
@@ -485,7 +512,7 @@ class UnionFind:
             return len({self[x] for x in objects}) == 1
         return False
 
-    def update(self, other: 'UnionFind'):
+    def update(self, other: "UnionFind"):
         """Update sets based on other UnionFind instance"""
         for x, root in other.items():
             self.union(x, root)

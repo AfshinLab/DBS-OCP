@@ -15,16 +15,14 @@ DBS for Open Chromatin Profiling in single cells/nuclei, a.k.a scATAC-seq/snATAC
 
 2. Install the base environment for `environment.yaml` file using conda:
     ```
-    conda env create -n dbsopc -f environment.yaml 
+    conda env create -n dbsocp -f environment.yaml 
     ```
 
 3. Install the DBS-OPC package:
     ```
     pip install . 
     ```
-    For development the package can be installed in editable mode using `pip
-     install -e .`. 
-     
+ 
 To install on the Uppmax Bianca cluster follow these [instructions](doc/bianca_install.rst).
      
 
@@ -56,3 +54,37 @@ Required inputs:
 ## Development
 
 Information about ATAC-seq analysis can be found in the [here](doc/knowledge.md).
+
+### Setup
+
+To setup the development environment run:
+```
+conda env create -n dbsocp-dev -f environment.yaml
+```
+
+To install the package in editable mode with additional development dependancies run:
+```
+pip install -e .[dev]
+```
+
+### Code style
+
+Code style is enforced using `black`. To run the formatter:
+```
+black src/ tests/
+```
+
+### Linting
+
+Linting is done using `flake8`. To run the linter:
+```
+flake8 src/ tests/
+flake8 --select=W292 --filename '*.yaml,*.yml'
+```
+
+### Testing
+
+Testing is done using `pytest`. To run the tests:
+```
+pytest -v tests
+```

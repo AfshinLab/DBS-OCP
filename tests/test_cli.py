@@ -6,7 +6,7 @@ import sys
 
 from dbsocp.cli.init import init
 from dbsocp.cli.config import change_config
-from dbsocp.cli.run import run, SnakemakeError
+from dbsocp.cli.run import run
 
 TESTDATA = Path("tests/testdata")
 TESTDATA_READ1_V1 = TESTDATA / "reads.1.fastq.gz"
@@ -63,7 +63,7 @@ def _workdir_v1(tmp_path_factory):
     change_config(path / CONFIG_NAME, [("reference", str(TESTDATA_REFERENCE))])
     try:
         run(cores=1, workdir=path, snakemake_args=["--cores", "1", "--keep-going"])
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         print_all_logs(path)
     return path
 
@@ -84,23 +84,17 @@ def _workdir_v2(tmp_path_factory):
     path = tmp_path_factory.mktemp(basename="analysis-") / "analysis"
     init(path, TESTDATA_READ1_V2)
     change_config(
-        path / CONFIG_NAME, 
-        [("reference", str(TESTDATA_REFERENCE)), 
-        ("index", str(TESTDATA_INDEX_V2)),
-        ("h2", "CATGACCTCTTGGAACTGTC")]
+        path / CONFIG_NAME,
+        [
+            ("reference", str(TESTDATA_REFERENCE)),
+            ("index", str(TESTDATA_INDEX_V2)),
+            ("h2", "CATGACCTCTTGGAACTGTC"),
+        ],
     )
     try:
         run(cores=1, workdir=path, snakemake_args=["--cores", "1", "--keep-going"])
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         print_all_logs(path)
-    return path
-
-
-@pytest.fixture
-def workdir_v1(_workdir_v1, tmp_path):
-    """Make a fresh copy of the prepared analysis directory"""
-    path = tmp_path / "analysis"
-    shutil.copytree(_workdir_v1, path)
     return path
 
 

@@ -16,20 +16,13 @@ logger = logging.getLogger(__name__)
 def main(commandline_arguments=None) -> int:
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s - %(module)s - %(levelname)s: %(message)s"
+        format="%(asctime)s - %(module)s - %(levelname)s: %(message)s",
     )
 
     parser = ArgumentParser(description=__doc__, prog="dbsocp")
+    parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument(
-        "--version",
-        action="version",
-        version=__version__
-    )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        default=False,
-        help="Print debug messages"
+        "--debug", action="store_true", default=False, help="Print debug messages"
     )
     subparsers = parser.add_subparsers()
 
@@ -41,9 +34,7 @@ def main(commandline_arguments=None) -> int:
         module = importlib.import_module("." + module_name, cli_package.__name__)
         help = module.__doc__.strip().split("\n", maxsplit=1)[0]
         subparser = subparsers.add_parser(
-            module_name,
-            help=help,
-            description=module.__doc__
+            module_name, help=help, description=module.__doc__
         )
         subparser.set_defaults(module=module)
         module.add_arguments(subparser)
@@ -65,7 +56,7 @@ def main(commandline_arguments=None) -> int:
         del args.module
 
         # Print settings for module
-        module_name = module.__name__.split('.')[-1]
+        module_name = module.__name__.split(".")[-1]
 
         # Re-parse extra arguments if module is not "run" to raise the expected error
         if module_name != "run" and extra_args:

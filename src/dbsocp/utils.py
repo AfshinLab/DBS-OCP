@@ -8,7 +8,6 @@ import dnaio
 from tqdm import tqdm as std_tqdm
 
 
-
 # Disable on non-TTY and use 1000 unit divisor
 tqdm = partial(std_tqdm, disable=None, unit_scale=True)
 
@@ -52,7 +51,6 @@ def guess_paired_path(path: Path):
 
 
 class Summary(Counter):
-
     def print_stats(self, name=None, value_width=15, print_to=sys.stderr):
         """
         Prints stats in nice table with two column for the key and value pairs in
@@ -66,9 +64,9 @@ class Summary(Counter):
         width = value_width + max_name_width + 1
 
         # Header
-        print("="*width, file=print_to)
+        print("=" * width, file=print_to)
         print(f"STATS SUMMARY - {name}", file=print_to)
-        print("-"*width, file=print_to)
+        print("-" * width, file=print_to)
 
         # Print stats in columns
         for name, value in self.items():
@@ -79,7 +77,7 @@ class Summary(Counter):
                 value_str = f"{value:>{value_width+4},.3f}"
 
             print(f"{name:<{max_name_width}} {value_str}", file=print_to)
-        print("="*width, file=print_to)
+        print("=" * width, file=print_to)
 
 
 def revcomp(sequence):
