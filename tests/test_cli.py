@@ -36,6 +36,7 @@ def test_environment():
         "bwa",
         "samtools --version",
         "snaptools --version",
+        "sinto --version",
         "preseq",
     ]
     for tool in tools:
@@ -51,6 +52,13 @@ def test_config(tmp_path):
     workdir = tmp_path / "analysis"
     init(workdir, TESTDATA_READ1_V1)
     change_config(workdir / CONFIG_NAME, [("reference", str(TESTDATA_REFERENCE))])
+
+
+def test_dryrun(tmp_path):
+    workdir = tmp_path / "analysis"
+    init(workdir, TESTDATA_READ1_V1)
+    change_config(workdir / CONFIG_NAME, [("reference", str(TESTDATA_REFERENCE))])
+    run(cores=1, workdir=workdir, snakemake_args=["--dryrun"])
 
 
 @pytest.fixture(scope="module")
