@@ -271,8 +271,8 @@ rule get_fragments:
 rule mergedups:
     output:
         frags = temp("fragments.merged.tsv"),
-        merges = "fragments.barcode_merges.tsv",
-        plot = "fragments.barcode_merges.png"
+        merges = touch("fragments.barcode_merges.tsv"),
+        plot = touch("fragments.barcode_merges.png")
     input:
         frags = "fragments.tsv.gz",
         index = "fragments.tsv.gz.tbi"
