@@ -161,7 +161,7 @@ def run_mergedups(
         summary,
     )
 
-    if plot_similarity is not None:
+    if plot_similarity is not None and len(jaccard_similarity) > 0:
         import matplotlib.pyplot as plt
 
         # Remove perfect matched barcodes
