@@ -35,7 +35,6 @@ def test_environment():
         "cutadapt --version",
         "bwa",
         "samtools --version",
-        "snaptools --version",
         "sinto --version",
         "preseq",
     ]
@@ -123,9 +122,6 @@ expected_files = [
     "trimmed.barcoded.2_fastqc.html",
     "mapped.bam",
     "mapped.bam.bai",
-    "mapped.snap",
-    "mapped.snap.qc",
-    "mapped.nsort.bam",
     "fragments.tsv.gz",
     "fragments.tsv.gz.tbi",
     "fragments.merged.tsv.gz",

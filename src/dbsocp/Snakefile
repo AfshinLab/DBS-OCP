@@ -22,13 +22,7 @@ inputs_align = [
     "preseq_c_curve.txt"
 ]
 
-inputs_snaptools = [
-    "mapped.snap",
-    "mapped.snap.qc",
-    "add_bmat.done"
-]
-
-inputs_archr = [
+inputs_fragments = [
     "fragments.merged.tsv.gz",
     "fragments.merged.tsv.gz.tbi",
 ]
@@ -39,17 +33,12 @@ else:
     include: "rules/trim_v2.smk"
 
 rule final:
-    input: inputs_preprocess, inputs_align, inputs_snaptools, inputs_archr
+    input: inputs_preprocess, inputs_align, inputs_fragments
 
 
-rule archr:
-    """Apply ArchR to data"""
-    input: inputs_archr
-
-
-rule snaptools:
-    """Apply SnapTools to data"""
-    input: inputs_snaptools
+rule fragments:
+    """Extract and merge fragments from BAM files"""
+    input: inputs_fragments
 
 
 rule align:
@@ -185,66 +174,6 @@ rule index:
         " samtools index -@ {threads} {input.bam}"
 
 
-rule snaptools_pre:
-    """Convert pair-end reads into fragments and for each fragment check: mapping 
-    quality, proper pairing, length, duplicates. Generates a snap-format 
-    (Single-Nucleus Accessibility Profiles) file and QC file."""
-    output:
-        snap = "mapped.snap",
-        snap_qc = "mapped.snap.qc",
-    input:
-        bam = "mapped.nsort.bam"
-    log: "mapped.snap.log"
-    threads: 20
-    params:
-        reference_name = config["reference_name"],
-        fai = config["reference"] + ".fai"
-    shell:
-        "snaptools snap-pre"
-        " --input-file={input.bam}"
-        " --output-snap={output.snap}"
-        " --genome-name={params.reference_name}"
-        # For genome-size -> file with chromosome name and length on 1st and 2nd column
-        " --genome-size={params.fai}" 
-        " --min-mapq=30"
-        " --min-flen=0"
-        " --max-flen=1000"
-        " --keep-chrm=TRUE"
-        " --keep-single=FALSE"
-        " --keep-secondary=FALSE"
-        " --overwrite=True"
-        " --max-num=1000000"
-        " --min-cov=100"
-        " --verbose=True 2> {log}"
-
-
-rule snaptools_add_bmat:
-    """Convert pair-end reads into fragments and for each fragment check: mapping 
-    quality, proper pairing, length, duplicates. Generates a snap-format 
-    (Single-Nucleus Accessibility Profiles) file and QC file."""
-    output:
-        done = temp("add_bmat.done")
-    input:
-        snap = "mapped.snap"
-    log: "mapped.snap.add_bmat.log"
-    threads: 20
-    params:
-        bin_sizes = config["bin_sizes"]
-    shell:
-        # Rule cannot be rerun without frist deleting current session.
-        # Try deleting first and then generate bmat.
-        "snaptools snap-del"
-        " --snap-file={input.snap}"
-        " --session-name AM"
-        " || true;"
-        " snaptools snap-add-bmat"
-        " --snap-file={input.snap}"
-        " --bin-size-list {params.bin_sizes}"
-        " --verbose=True > {log}"
-        " &&"
-        " touch {output}"
-
-
 rule get_fragments:
     """Convert BAM to fragment file using sinto"""
     output:
@@ -312,6 +241,7 @@ rule preseq_c_curve:
         " -bam {input}"
         " -pe"
         " --seg_len 10000000"
+
 
 # Run MultiQC as a final set
 onsuccess:
