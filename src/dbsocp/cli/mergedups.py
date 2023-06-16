@@ -191,7 +191,9 @@ def run_mergedups(
     summary.print_stats(name=__name__)
 
 
-def write_merged_fragments(input: str, output: str, uf: "UnionFind", summary: Dict[str, int]):
+def write_merged_fragments(
+    input: str, output: str, uf: "UnionFind", summary: Dict[str, int]
+):
     """Write merged fragments to file."""
     with open(output, "w") as outfile:
         parser = parse_fragment_file(input)
